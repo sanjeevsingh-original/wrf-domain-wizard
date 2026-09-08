@@ -1,65 +1,19 @@
-// WRF grid-geometry helpers.
-// Geographic-distance calculations are approximate; verify the final domain with WPS geogrid.exe.
-const WRF = {
-  haversineKm(lat1, lon1, lat2, lon2) {
-    const R = 6371.0088, rad = Math.PI / 180;
-    const dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(dLon / 2) ** 2;
-    return 2 * R * Math.asin(Math.sqrt(a));
-  },
-  eastWestKm(bounds) { return this.haversineKm(bounds.getCenter().lat, bounds.getWest(), bounds.getCenter().lat, bounds.getEast()); },
-  northSouthKm(bounds) { return this.haversineKm(bounds.getSouth(), bounds.getCenter().lng, bounds.getNorth(), bounds.getCenter().lng); },
-  gridDimensions(bounds, dx, dy) {
-    return {
-      e_we: Math.max(3, Math.round((this.eastWestKm(bounds) * 1000) / dx) + 1),
-      e_sn: Math.max(3, Math.round((this.northSouthKm(bounds) * 1000) / dy) + 1)
-    };
-  },
-  shrinkBounds(bounds, factor) {
-    const c = bounds.getCenter();
-    const latHalf = (bounds.getNorth() - bounds.getSouth()) * factor / 2;
-    const lonHalf = (bounds.getEast() - bounds.getWest()) * factor / 2;
-    return L.latLngBounds([c.lat - latHalf, c.lng - lonHalf], [c.lat + latHalf, c.lng + lonHalf]);
-  },
-  normalizeGridDimension(value, ratio) {
-    const cells = Math.max(1, Math.round((value - 1) / ratio));
-    return cells * ratio + 1;
-  },
-  validate(domains, dx, dy, ratios) {
-    const errors = [];
-    if (!Number.isFinite(dx) || dx < 100) errors.push('dx must be at least 100 m.');
-    if (!Number.isFinite(dy) || dy < 100) errors.push('dy must be at least 100 m.');
-    if (!domains.length) errors.push('At least one domain is required.');
-    let cumulativeRatio = 1;
-
-    for (let i = 0; i < domains.length; i++) {
-      let ratio = 1;
-      if (i > 0) {
-        ratio = Number(ratios[i]);
-        if (!Number.isInteger(ratio) || ratio < 2 || ratio > 10) {
-          errors.push(`d${i + 1} has an invalid nesting ratio.`);
-        } else {
-          cumulativeRatio *= ratio;
-        }
-        if (!domains[i - 1].getBounds().contains(domains[i].getBounds())) {
-          errors.push(`d${i + 1} is not fully contained inside d${i}.`);
-        }
-      }
-
-      const g = this.gridDimensions(domains[i].getBounds(), dx / cumulativeRatio, dy / cumulativeRatio);
-      const ew = i === 0 ? g.e_we : this.normalizeGridDimension(g.e_we, ratio);
-      const es = i === 0 ? g.e_sn : this.normalizeGridDimension(g.e_sn, ratio);
-      if (ew < 20 || es < 20) errors.push(`d${i + 1} is too small (${ew} × ${es} grid points).`);
-
-      if (i > 0) {
-        const parentGrid = this.gridDimensions(domains[i - 1].getBounds(), dx / (cumulativeRatio / ratio), dy / (cumulativeRatio / ratio));
-        const childCellsX = (ew - 1) / ratio;
-        const childCellsY = (es - 1) / ratio;
-        if (childCellsX > parentGrid.e_we - 1 || childCellsY > parentGrid.e_sn - 1) {
-          errors.push(`d${i + 1} is too large for d${i} at ${ratio}:1 nesting (${ew} × ${es}). Draw a smaller child domain.`);
-        }
-      }
-    }
-    return errors;
+// Projection-aware WRF grid geometry. Final production validation should still be run with WPS geogrid.exe.
+const WRF = (() => {
+  const clamp=(v,a,b)=>Math.min(Math.max(v,a),b);
+  function projectionDef(s){
+    if(s.projection==='lambert') return `+proj=lcc +lat_1=${s.truelat1} +lat_2=${s.truelat2} +lat_0=${s.refLat} +lon_0=${s.refLon} +datum=WGS84 +units=m +no_defs`;
+    if(s.projection==='mercator') return `+proj=merc +lat_ts=${s.refLat} +lon_0=${s.refLon} +datum=WGS84 +units=m +no_defs`;
+    if(s.projection==='polar'){const north=s.hemisphere!=='south';return `+proj=stere +lat_0=${north?90:-90} +lat_ts=${s.polarLat*(north?1:-1)} +lon_0=${s.refLon} +datum=WGS84 +units=m +no_defs`;}
+    return null;
   }
-};
+  function project(lat,lon,s){if(s.projection==='lat-lon')return{x:lon,y:lat};const p=proj4(projectionDef(s),[lon,lat]);return{x:p[0],y:p[1]};}
+  function inverse(x,y,s){if(s.projection==='lat-lon')return{lat:y,lon:x};const p=proj4(projectionDef(s),'WGS84',[x,y]);return{lat:p[1],lon:p[0]};}
+  function projectedExtent(bounds,s){const pts=[[bounds.getSouth(),bounds.getWest()],[bounds.getSouth(),bounds.getEast()],[bounds.getNorth(),bounds.getWest()],[bounds.getNorth(),bounds.getEast()]].map(p=>project(p[0],p[1],s));return{minX:Math.min(...pts.map(p=>p.x)),maxX:Math.max(...pts.map(p=>p.x)),minY:Math.min(...pts.map(p=>p.y)),maxY:Math.max(...pts.map(p=>p.y))};}
+  function gridDimensions(bounds,dx,dy,s){if(s.projection==='lat-lon'){return{e_we:Math.max(3,Math.round((bounds.getEast()-bounds.getWest())/dx)+1),e_sn:Math.max(3,Math.round((bounds.getNorth()-bounds.getSouth())/dy)+1)};}const e=projectedExtent(bounds,s);return{e_we:Math.max(3,Math.round((e.maxX-e.minX)/dx)+1),e_sn:Math.max(3,Math.round((e.maxY-e.minY)/dy)+1)};}
+  function snapDimension(value,ratio){return Math.max(ratio+1,Math.round((value-1)/ratio)*ratio+1);}
+  function parentStart(parent,child,parentGrid,childGrid,ratio,s){const p=projectedExtent(parent,s),c=projectedExtent(child,s);const i=1+Math.round(((c.minX-p.minX)/Math.max(1,p.maxX-p.minX))*(parentGrid.e_we-1));const j=1+Math.round(((c.minY-p.minY)/Math.max(1,p.maxY-p.minY))*(parentGrid.e_sn-1));return{i:clamp(i,1,Math.max(1,parentGrid.e_we-(childGrid.e_we-1)/ratio)),j:clamp(j,1,Math.max(1,parentGrid.e_sn-(childGrid.e_sn-1)/ratio))};}
+  function shrinkBounds(bounds,factor){const c=bounds.getCenter(),lat=(bounds.getNorth()-bounds.getSouth())*factor/2,lon=(bounds.getEast()-bounds.getWest())*factor/2;return L.latLngBounds([c.lat-lat,c.lng-lon],[c.lat+lat,c.lng+lon]);}
+  function validate(domains,dx,dy,ratios,s){const errors=[],warnings=[];if(!domains.length)errors.push('At least one domain is required.');if(!Number.isFinite(dx)||dx<=0)errors.push('d01 dx must be positive.');if(!Number.isFinite(dy)||dy<=0)errors.push('d01 dy must be positive.');if(s.projection==='lambert'&&Math.abs(s.truelat1-s.truelat2)<1e-9)warnings.push('truelat1 and truelat2 are identical; verify this is intentional.');let cdx=dx,cdy=dy;for(let i=0;i<domains.length;i++){if(i){const r=Number(ratios[i]);if(!Number.isInteger(r)||r<2||r>10)errors.push(`d${String(i+1).padStart(2,'0')} has an invalid 2–10 integer nesting ratio.`);else{cdx/=r;cdy/=r;if(r%2===0)warnings.push(`d${String(i+1).padStart(2,'0')} uses ${r}:1. Odd ratios are generally preferred for two-way nesting.`);}if(!domains[i-1].getBounds().contains(domains[i].getBounds()))errors.push(`d${String(i+1).padStart(2,'0')} is not fully contained inside d${String(i).padStart(2,'0')}.`);}const g=gridDimensions(domains[i].getBounds(),cdx,cdy,s),r=i?Number(ratios[i]):1,ew=i?snapDimension(g.e_we,r):g.e_we,es=i?snapDimension(g.e_sn,r):g.e_sn;if(ew<20||es<20)errors.push(`d${String(i+1).padStart(2,'0')} is too small (${ew} × ${es}).`);if(i&&((ew-1)%r||(es-1)%r))errors.push(`d${String(i+1).padStart(2,'0')} dimensions are incompatible with its ${r}:1 nesting ratio.`);}return{errors,warnings};}
+  return{projectionDef,project,inverse,projectedExtent,gridDimensions,snapDimension,parentStart,shrinkBounds,validate};
+})();
