@@ -28,20 +28,18 @@
 
           <div class="row g-2 mb-3">
             <div class="col-6">
-              <label for="domainCount" class="form-label">Domains</label>
+              <label for="domainCount" class="form-label">Number of domains</label>
               <select id="domainCount" class="form-select">
-                <option value="1">1 — d01</option>
-                <option value="2">2 — d01:d02</option>
-                <option value="3">3 — d01:d03</option>
+                <option value="1">1 — d01</option><option value="2">2 — d01:d02</option><option value="3">3 — d01:d03</option>
+                <option value="4">4 — d01:d04</option><option value="5">5 — d01:d05</option><option value="6">6 — d01:d06</option>
+                <option value="7">7 — d01:d07</option><option value="8">8 — d01:d08</option><option value="9">9 — d01:d09</option>
+                <option value="10">10 — d01:d10</option>
               </select>
             </div>
             <div class="col-6">
               <label for="nestRatio" class="form-label">Nest ratio</label>
-              <select id="nestRatio" class="form-select">
-                <option value="3" selected>3:1 (recommended)</option>
-                <option value="2">2:1</option>
-                <option value="5">5:1</option>
-              </select>
+              <input id="nestRatio" class="form-control" type="number" min="2" max="10" step="1" value="3">
+              <div class="form-text">User-defined integer, 2–10.</div>
             </div>
           </div>
 
@@ -107,15 +105,17 @@
           </div>
 
           <div class="alert alert-info py-2 small">
-            <strong>Workflow:</strong> zoom to the study region → set grid/projection options → draw domains → edit/check nesting → export.
-            The map is geographic (lat/lon); the exported WPS namelist contains the selected WRF projection parameters.
+            <strong>Draw workflow:</strong> select the number of domains and nesting ratio, then use the <strong>rectangle tool on the map</strong> to draw d01, d02, … in order. Draw each child fully inside its parent. You can edit or delete rectangles after drawing.
           </div>
 
-          <button id="drawBtn" class="btn btn-primary w-100 mb-2">Generate Domains</button>
-          <button id="exportBtn" class="btn btn-success w-100">Export namelist.wps</button>
+          <div class="d-grid gap-2">
+            <button id="drawBtn" class="btn btn-primary">Start / Reset Domain Drawing</button>
+            <button id="clearBtn" class="btn btn-outline-danger">Clear All Domains</button>
+            <button id="exportBtn" class="btn btn-success">Export namelist.wps</button>
+          </div>
 
           <div id="output" class="mt-3" aria-live="polite">
-            <p class="text-muted mb-0">Generate domains to see grid dimensions and validation.</p>
+            <p class="text-muted mb-0">Select the number of domains, then draw the rectangles on the map.</p>
           </div>
         </div>
       </aside>
