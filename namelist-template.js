@@ -4,8 +4,8 @@ function generateNamelist(boundsList) {
   }
 
   const maxDom = boundsList.length;
-  const dx = 10000;
-  const dy = 10000;
+  const dx = readGridSpacing('dxInput', 10000);
+  const dy = readGridSpacing('dyInput', 10000);
   const parentGridRatio = [1];
   const parentId = [1];
   const iParentStart = [1];
@@ -13,7 +13,6 @@ function generateNamelist(boundsList) {
   const eWe = [];
   const eSn = [];
 
-  // Calculate grid dimensions from the actual geographic rectangles.
   for (let i = 0; i < maxDom; i++) {
     const b = boundsList[i];
     const centerLat = b.getCenter().lat;
@@ -23,8 +22,8 @@ function generateNamelist(boundsList) {
     let ew = Math.max(4, Math.round((widthKm * 1000) / dx) + 1);
     let es = Math.max(4, Math.round((heightKm * 1000) / dy) + 1);
 
-    // For nested domains with a 3:1 ratio, make (e_we-1) and (e_sn-1)
-    // divisible by 3 so the nest aligns cleanly with the parent grid.
+    // With the default 3:1 nesting ratio, make nested dimensions compatible
+    // with the parent-grid relationship: (e_we - 1) and (e_sn - 1) are divisible by 3.
     if (i > 0) {
       ew = Math.max(4, Math.floor((ew - 1) / 3) * 3 + 1);
       es = Math.max(4, Math.floor((es - 1) / 3) * 3 + 1);
@@ -35,41 +34,36 @@ function generateNamelist(boundsList) {
 
     if (i > 0) {
       const parent = boundsList[i - 1];
-      const child = b;
-      const parentEw = eWe[i - 1];
-      const parentEs = eSn[i - 1];
       const ratio = 3;
-
       parentGridRatio.push(ratio);
       parentId.push(i);
 
-      const xFraction = (child.getWest() - parent.getWest()) / (parent.getEast() - parent.getWest());
-      const yFraction = (child.getSouth() - parent.getSouth()) / (parent.getNorth() - parent.getSouth());
+      const xFraction = (b.getWest() - parent.getWest()) / (parent.getEast() - parent.getWest());
+      const yFraction = (b.getSouth() - parent.getSouth()) / (parent.getNorth() - parent.getSouth());
+      const childWidthOnParent = Math.round((ew - 1) / ratio);
+      const childHeightOnParent = Math.round((es - 1) / ratio);
 
       iParentStart.push(clamp(
-        Math.round(xFraction * (parentEw - 1)) + 1,
+        Math.round(xFraction * (eWe[i - 1] - 1)) + 1,
         1,
-        Math.max(1, parentEw - Math.round((ew - 1) / ratio))
+        Math.max(1, eWe[i - 1] - childWidthOnParent)
       ));
       jParentStart.push(clamp(
-        Math.round(yFraction * (parentEs - 1)) + 1,
+        Math.round(yFraction * (eSn[i - 1] - 1)) + 1,
         1,
-        Math.max(1, parentEs - Math.round((es - 1) / ratio))
+        Math.max(1, eSn[i - 1] - childHeightOnParent)
       ));
     }
   }
 
   const ref = boundsList[0].getCenter();
-  const repeat = (value) => Array(maxDom).fill(value).join(', ');
-  const dates = repeat("'2000-01-01_00:00:00'");
-  const endDates = repeat("'2000-01-02_00:00:00'");
-  const geogDataRes = repeat("'default'");
+  const repeat = value => Array(maxDom).fill(value).join(', ');
 
   return `&share
  wrf_core = 'ARW',
  max_dom = ${maxDom},
- start_date = ${dates},
- end_date   = ${endDates},
+ start_date = ${repeat("'2000-01-01_00:00:00'")},
+ end_date   = ${repeat("'2000-01-02_00:00:00'")},
  interval_seconds = 21600,
  io_form_geogrid = 2,
  opt_output_from_geogrid_path = './',
@@ -83,7 +77,7 @@ function generateNamelist(boundsList) {
  j_parent_start    = ${jParentStart.join(', ')},
  e_we              = ${eWe.join(', ')},
  e_sn              = ${eSn.join(', ')},
- geog_data_res     = ${geogDataRes},
+ geog_data_res     = ${repeat("'default'")},
  dx                = ${dx},
  dy                = ${dy},
  map_proj          = 'lat-lon',
@@ -105,6 +99,15 @@ function generateNamelist(boundsList) {
  io_form_metgrid = 2,
 /
 `;
+}
+
+function readGridSpacing(id, fallback) {
+  const element = document.getElementById(id);
+  const value = Number(element?.value);
+  if (!Number.isFinite(value) || value < 100) {
+    throw new Error('dx and dy must be valid values of at least 100 m.');
+  }
+  return value;
 }
 
 function clamp(value, min, max) {
