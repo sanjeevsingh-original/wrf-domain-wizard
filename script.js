@@ -1,214 +1,26 @@
 // WRF Domain Wizard
-const map = L.map('map').setView([20, 78], 5);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
-}).addTo(map);
+const map=L.map('map').setView([20,78],5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; OpenStreetMap contributors',maxZoom:19}).addTo(map);
+const drawnItems=new L.FeatureGroup().addTo(map), domains=[];
+const colors=['#dc3545','#0d6efd','#198754','#6f42c1','#fd7e14','#20c997','#d63384','#6610f2','#1982c4','#495057'];
+const countEl=document.getElementById('domainCount'), ratioTable=document.getElementById('ratioTable');
+const drawControl=new L.Control.Draw({edit:{featureGroup:drawnItems,edit:true,remove:true},draw:{rectangle:true,polygon:false,circle:false,circlemarker:false,marker:false,polyline:false}});map.addControl(drawControl);
 
-const drawnItems = new L.FeatureGroup().addTo(map);
-const domains = [];
-const domainColors = ['#dc3545', '#0d6efd', '#198754', '#6f42c1', '#fd7e14', '#20c997', '#d63384', '#6610f2', '#1982c4', '#495057'];
-const domainCountInput = document.getElementById('domainCount');
-const ratioInput = document.getElementById('nestRatio');
-
-const drawControl = new L.Control.Draw({
-  edit: { featureGroup: drawnItems, edit: true, remove: true },
-  draw: {
-    rectangle: true,
-    polygon: false,
-    circle: false,
-    circlemarker: false,
-    marker: false,
-    polyline: false
-  }
-});
-map.addControl(drawControl);
-
-map.on(L.Draw.Event.CREATED, event => {
-  const expected = Number(domainCountInput.value);
-  if (domains.length >= expected) {
-    showError(`You selected ${expected} domain${expected === 1 ? '' : 's'}. Change the number of domains or clear the drawing first.`);
-    return;
-  }
-
-  const index = domains.length;
-  const layer = event.layer;
-  layer.options.domainIndex = index;
-  layer.setStyle({ color: domainColors[index], weight: 2, fillOpacity: 0.08 });
-  layer.bindTooltip(`d${index + 1}`, { sticky: true });
-
-  if (index > 0 && !domains[index - 1].getBounds().contains(layer.getBounds())) {
-    showError(`d${index + 1} must be fully contained inside d${index}. Draw it again inside the parent domain.`);
-    return;
-  }
-
-  drawnItems.addLayer(layer);
-  domains.push(layer);
-  updateOutputFromDomains();
-
-  if (domains.length === expected) {
-    showMessage(`All ${expected} domain${expected === 1 ? '' : 's'} drawn. Use the map edit tool to refine any rectangle.`);
-  } else {
-    showMessage(`d${index + 1} added. Now draw d${index + 2} inside d${index + 1}.`);
-  }
-});
-
-map.on(L.Draw.Event.EDITED, () => {
-  syncDomains();
-  updateOutputFromDomains();
-});
-map.on(L.Draw.Event.DELETED, () => {
-  syncDomains();
-  updateOutputFromDomains();
-});
-
-document.getElementById('drawBtn').addEventListener('click', startDrawing);
-document.getElementById('clearBtn').addEventListener('click', () => clearDomains(true));
-document.getElementById('exportBtn').addEventListener('click', exportNamelist);
-document.getElementById('projectionInput').addEventListener('change', updateProjectionUI);
-document.getElementById('autoCenterInput').addEventListener('change', updateOutputFromDomains);
-ratioInput.addEventListener('input', updateOutputFromDomains);
-domainCountInput.addEventListener('change', () => {
-  const expected = Number(domainCountInput.value);
-  if (domains.length > expected) {
-    showError(`You now require ${expected} domains, but ${domains.length} are already drawn. Clear and redraw to apply the new count.`);
-  } else if (domains.length) {
-    updateOutputFromDomains();
-  }
-});
-updateProjectionUI();
-
-function startDrawing() {
-  clearDomains(false);
-  const expected = Number(domainCountInput.value);
-  showMessage(`Draw d01 first, then d02 through d${String(expected).padStart(2, '0')}. Use the rectangle tool in the map toolbar.`);
-  new L.Draw.Rectangle(map).enable();
-}
-
-function clearDomains(show = true) {
-  drawnItems.clearLayers();
-  domains.length = 0;
-  if (show) showMessage('All domains cleared. Select the number of domains and start drawing again.');
-  else updateOutputFromDomains();
-}
-
-function syncDomains() {
-  domains.length = 0;
-  drawnItems.eachLayer(layer => domains.push(layer));
-  domains.sort((a, b) => (a.options.domainIndex ?? 999) - (b.options.domainIndex ?? 999));
-  domains.forEach((layer, i) => {
-    layer.options.domainIndex = i;
-    layer.setStyle({ color: domainColors[i], weight: 2, fillOpacity: 0.08 });
-    if (layer.getTooltip()) layer.setTooltipContent(`d${i + 1}`);
-    else layer.bindTooltip(`d${i + 1}`, { sticky: true });
-  });
-}
-
-function updateProjectionUI() {
-  const projection = document.getElementById('projectionInput').value;
-  document.getElementById('lambertOptions').style.display = projection === 'lambert' ? 'block' : 'none';
-  updateOutputFromDomains();
-}
-
-function getReferencePoint() {
-  const b = domains[0].getBounds();
-  const auto = document.getElementById('autoCenterInput').checked;
-  const lat = auto ? b.getCenter().lat : Number(document.getElementById('refLatInput').value);
-  const lon = auto ? b.getCenter().lng : Number(document.getElementById('refLonInput').value);
-  if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180) {
-    throw new Error('Reference latitude/longitude must be valid.');
-  }
-  return { lat, lon };
-}
-
-function getProjectionSettings() {
-  const projection = document.getElementById('projectionInput').value;
-  const ref = getReferencePoint();
-  const settings = { projection, refLat: ref.lat, refLon: ref.lon };
-  if (projection === 'lambert') {
-    settings.truelat1 = Number(document.getElementById('trueLat1Input').value);
-    settings.truelat2 = Number(document.getElementById('trueLat2Input').value);
-    if (![settings.truelat1, settings.truelat2].every(Number.isFinite) || Math.abs(settings.truelat1) >= 90 || Math.abs(settings.truelat2) >= 90) {
-      throw new Error('Lambert true latitudes must be valid values between -90 and 90 degrees.');
-    }
-  }
-  return settings;
-}
-
-function getNestRatio() {
-  const ratio = Number(ratioInput.value);
-  if (!Number.isInteger(ratio) || ratio < 2 || ratio > 10) throw new Error('Nest ratio must be an integer from 2 to 10.');
-  return ratio;
-}
-
-function updateOutputFromDomains() {
-  const output = document.getElementById('output');
-  if (!domains.length) {
-    output.innerHTML = '<p class="text-muted mb-0">Select the number of domains, then draw the rectangles on the map.</p>'; return;
-  }
-
-  try {
-    const dx = Number(document.getElementById('dxInput').value);
-    const dy = Number(document.getElementById('dyInput').value);
-    const ratio = getNestRatio();
-    const ratios = Array(domains.length).fill(ratio); ratios[0] = 1;
-    const errors = WRF.validate(domains, dx, dy, ratios);
-    const projection = getProjectionSettings();
-    const cumulative = { x: 1, y: 1 };
-
-    const rows = domains.map((domain, i) => {
-      const b = domain.getBounds();
-      if (i > 0) { cumulative.x *= ratio; cumulative.y *= ratio; }
-      const g = WRF.gridDimensions(b, dx / cumulative.x, dy / cumulative.y);
-      const validEW = i === 0 ? g.e_we : WRF.normalizeGridDimension(g.e_we, ratio);
-      const validES = i === 0 ? g.e_sn : WRF.normalizeGridDimension(g.e_sn, ratio);
-      return `<div class="domain-summary mb-2"><strong>d${i + 1}</strong> — ${validEW} × ${validES} grid points<br>` +
-        `SW: ${b.getSouthWest().lat.toFixed(4)}, ${b.getSouthWest().lng.toFixed(4)}<br>` +
-        `NE: ${b.getNorthEast().lat.toFixed(4)}, ${b.getNorthEast().lng.toFixed(4)}<br>` +
-        `<span class="text-muted">grid spacing: ${(dx / cumulative.x).toFixed(0)} × ${(dy / cumulative.y).toFixed(0)} m</span></div>`;
-    }).join('');
-
-    const status = errors.length
-      ? `<div class="alert alert-danger py-2"><strong>Validation:</strong><ul class="mb-0">${errors.map(escapeHtml).map(e => `<li>${e}</li>`).join('')}</ul></div>`
-      : '<div class="alert alert-success py-2 mb-2">Nesting and basic grid checks passed.</div>';
-
-    const expected = Number(domainCountInput.value);
-    const progress = domains.length < expected
-      ? `<div class="alert alert-warning py-2">Draw ${expected - domains.length} more domain${expected - domains.length === 1 ? '' : 's'} to complete the configuration (${domains.length}/${expected}).</div>`
-      : '';
-
-    output.innerHTML = `<h5>Domain Summary</h5>${progress}${status}${rows}` +
-      `<div class="small text-muted">Projection: <strong>${escapeHtml(projection.projection)}</strong> · ref: ${projection.refLat.toFixed(3)}, ${projection.refLon.toFixed(3)} · nest ratio: ${ratio}:1</div>`;
-  } catch (error) {
-    output.innerHTML = `<div class="alert alert-danger mb-0">${escapeHtml(error.message)}</div>`;
-  }
-}
-
-function exportNamelist() {
-  if (!domains.length) { showError('Please draw at least d01 first.'); return; }
-  const expected = Number(domainCountInput.value);
-  if (domains.length !== expected) { showError(`You selected ${expected} domains but have drawn ${domains.length}. Please complete the domain drawing.`); return; }
-  try {
-    const dx = Number(document.getElementById('dxInput').value);
-    const dy = Number(document.getElementById('dyInput').value);
-    const ratio = getNestRatio();
-    const ratios = Array(domains.length).fill(ratio); ratios[0] = 1;
-    const errors = WRF.validate(domains, dx, dy, ratios);
-    if (errors.length) throw new Error(`Fix validation issues before export: ${errors.join(' ')}`);
-    const settings = getProjectionSettings();
-    const geogRes = document.getElementById('geogResInput').value;
-    const namelist = generateNamelist(domains.map(d => d.getBounds()), {
-      dx, dy, ratios, projection: settings.projection, refLat: settings.refLat,
-      refLon: settings.refLon, truelat1: settings.truelat1, truelat2: settings.truelat2,
-      geogDataRes: geogRes
-    });
-    const blob = new Blob([namelist], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'namelist.wps';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-  } catch (error) { showError(error.message || 'Unable to generate namelist.wps.'); }
-}
-
-function showMessage(message) { document.getElementById('output').innerHTML = `<div class="alert alert-info mb-0">${escapeHtml(message)}</div>`; }
-function showError(message) { document.getElementById('output').innerHTML = `<div class="alert alert-danger mb-0">${escapeHtml(message)}</div>`; }
-function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
+function pad(i){return String(i+1).padStart(2,'0');}
+function buildRatioTable(){const n=Number(countEl.value);if(n<2){ratioTable.innerHTML='<div class="small text-muted">Single domain: no nesting ratio required.</div>';return;}const old=[...document.querySelectorAll('.ratio-input')].map(x=>x.value);ratioTable.innerHTML='<div class="small fw-semibold mb-1">Parent → child nesting ratios</div>'+Array.from({length:n-1},(_,k)=>{const r=old[k]||3;return `<div class="row g-2 align-items-center mb-1"><div class="col-7"><span class="small">d${pad(k)} → d${pad(k+1)}</span></div><div class="col-5"><div class="input-group input-group-sm"><input class="form-control ratio-input" data-child="${k+1}" type="number" min="2" max="10" step="1" value="${r}"><span class="input-group-text">:1</span></div></div></div>`}).join('');document.querySelectorAll('.ratio-input').forEach(x=>x.addEventListener('input',updateOutputFromDomains));}
+function ratios(){const n=Number(countEl.value),r=Array(n).fill(1);document.querySelectorAll('.ratio-input').forEach(x=>r[Number(x.dataset.child)]=Number(x.value));return r;}
+function settings(){if(!domains.length)throw new Error('Draw d01 first.');const projection=document.getElementById('projectionInput').value,b=domains[0].getBounds(),auto=document.getElementById('autoCenterInput').checked,refLat=auto?b.getCenter().lat:Number(document.getElementById('refLatInput').value),refLon=auto?b.getCenter().lng:Number(document.getElementById('refLonInput').value);if(!Number.isFinite(refLat)||refLat<=-90||refLat>=90||!Number.isFinite(refLon)||refLon<-180||refLon>180)throw new Error('Reference latitude/longitude must be valid.');const s={projection,refLat,refLon};if(projection==='lambert'){s.truelat1=Number(document.getElementById('trueLat1Input').value);s.truelat2=Number(document.getElementById('trueLat2Input').value);if(![s.truelat1,s.truelat2].every(Number.isFinite)||Math.abs(s.truelat1)>=90||Math.abs(s.truelat2)>=90)throw new Error('Lambert true latitudes must be between -90 and 90 degrees.');}if(projection==='polar'){s.polarLat=Number(document.getElementById('polarLatInput').value);s.hemisphere=document.getElementById('polarHemisphere').value;if(!Number.isFinite(s.polarLat)||s.polarLat<=0||s.polarLat>=90)throw new Error('Polar true latitude must be between 0 and 90 degrees.');}return s;}
+function spacing(){const p=document.getElementById('projectionInput').value,dx=Number(document.getElementById('dxInput').value),dy=Number(document.getElementById('dyInput').value);if(p==='lat-lon'){if(!(dx>0&&dy>0))throw new Error('Lat-Lon dx/dy must be positive degrees.');}else if(!(dx>=100&&dy>=100))throw new Error('Projected-grid dx/dy must be at least 100 m.');return{dx,dy};}
+function startDrawing(){clearDomains(false);const n=Number(countEl.value);if(document.getElementById('nestMode').value==='auto'){autoGenerate();return;}showMessage(`Draw d01 first, then d02 through d${pad(n-1)}. Use the rectangle tool in the map toolbar.`);new L.Draw.Rectangle(map).enable();}
+function autoGenerate(){try{const n=Number(countEl.value),rs=ratios(),base=map.getBounds();if(!base.isValid())throw new Error('Zoom to a valid region before auto-generation.');clearDomains(false);let b=base;for(let i=0;i<n;i++){if(i)b=WRF.shrinkBounds(b,1/rs[i]);addDomain(L.rectangle(b),i);}updateOutputFromDomains();}catch(e){showError(e.message);}}
+function addDomain(layer,index){layer.options.domainIndex=index;layer.setStyle({color:colors[index],weight:2,fillOpacity:.08});layer.bindTooltip(`d${pad(index)}`,{sticky:true});drawnItems.addLayer(layer);domains.push(layer);}
+map.on(L.Draw.Event.CREATED,e=>{const n=Number(countEl.value),i=domains.length;if(i>=n){showError(`All ${n} selected domains are already drawn.`);return;}if(i&& !domains[i-1].getBounds().contains(e.layer.getBounds())){showError(`d${pad(i)} must be fully contained inside d${pad(i-1)}.`);return;}addDomain(e.layer,i);updateOutputFromDomains();if(domains.length<n)new L.Draw.Rectangle(map).enable();else showMessage(`All ${n} domains are drawn. Edit rectangles as needed, then export after validation.`);});
+map.on(L.Draw.Event.EDITED,()=>{syncDomains();updateOutputFromDomains();});
+map.on(L.Draw.Event.DELETED,()=>{syncDomains();updateOutputFromDomains();});
+function syncDomains(){domains.length=0;drawnItems.eachLayer(x=>domains.push(x));domains.sort((a,b)=>(a.options.domainIndex??999)-(b.options.domainIndex??999));domains.forEach((x,i)=>{x.options.domainIndex=i;x.setStyle({color:colors[i],weight:2,fillOpacity:.08});if(x.getTooltip())x.setTooltipContent(`d${pad(i)}`);});}
+function clearDomains(show=true){drawnItems.clearLayers();domains.length=0;if(show)showMessage('All domains cleared.');else updateOutputFromDomains();}
+function updateProjectionUI(){const p=document.getElementById('projectionInput').value;document.getElementById('lambertOptions').classList.toggle('d-none',p!=='lambert');document.getElementById('polarOptions').classList.toggle('d-none',p!=='polar');const projected=p!=='lat-lon';document.getElementById('dxUnit').textContent=projected?'(m)':'(°)';document.getElementById('dyUnit').textContent=projected?'(m)':'(°)';const dx=document.getElementById('dxInput'),dy=document.getElementById('dyInput');dx.min=projected?'100':'0.001';dy.min=projected?'100':'0.001';dx.step=projected?'100':'0.001';dy.step=projected?'100':'0.001';if(projected&&Number(dx.value)<100)dx.value=9000;if(projected&&Number(dy.value)<100)dy.value=9000;updateOutputFromDomains();}
+function updateOutputFromDomains(){const out=document.getElementById('output');if(!domains.length){out.innerHTML='<p class="text-muted mb-0">Select settings and draw d01 to begin.</p>';return;}try{const {dx,dy}=spacing(),s=settings(),rs=ratios(),v=WRF.validate(domains,dx,dy,rs,s);let cdx=dx,cdy=dy,total=0;const rows=domains.map((d,i)=>{if(i){cdx/=rs[i];cdy/=rs[i];}const raw=WRF.gridDimensions(d.getBounds(),cdx,cdy,s),ew=i?WRF.snapDimension(raw.e_we,rs[i]):raw.e_we,es=i?WRF.snapDimension(raw.e_sn,rs[i]):raw.e_sn;total+=ew*es;const ps=i?WRF.parentStart(domains[i-1].getBounds(),d.getBounds(),WRF.gridDimensions(domains[i-1].getBounds(),cdx*rs[i],cdy*rs[i],s),{e_we:ew,e_sn:es},rs[i],s):null;return `<div class="domain-summary mb-2"><strong>d${pad(i)}</strong> — ${ew} × ${es} grid points · dx=${cdx.toFixed(s.projection==='lat-lon'?5:0)} ${s.projection==='lat-lon'?'°':'m'} · dy=${cdy.toFixed(s.projection==='lat-lon'?5:0)} ${s.projection==='lat-lon'?'°':'m'}${ps?`<br><span class="text-muted">parent start: i=${ps.i}, j=${ps.j} · ratio=${rs[i]}:1</span>`:''}<br><span class="text-muted">SW ${d.getBounds().getSouthWest().lat.toFixed(4)}, ${d.getBounds().getSouthWest().lng.toFixed(4)} · NE ${d.getBounds().getNorthEast().lat.toFixed(4)}, ${d.getBounds().getNorthEast().lng.toFixed(4)}</span></div>`;}).join('');const status=v.errors.length?`<div class="alert alert-danger py-2"><strong>Errors</strong><ul class="mb-0">${v.errors.map(escapeHtml).map(x=>`<li>${x}</li>`).join('')}</ul></div>`:'<div class="alert alert-success py-2 mb-2">Core WRF nesting checks passed.</div>';const warns=v.warnings.length?`<div class="alert alert-warning py-2"><strong>Warnings</strong><ul class="mb-0">${v.warnings.map(escapeHtml).map(x=>`<li>${x}</li>`).join('')}</ul></div>`:'';out.innerHTML=`<h5>Domain Summary</h5>${status}${warns}${rows}<div class="small"><strong>Estimated horizontal cells:</strong> ${total.toLocaleString()}</div><div class="small text-muted mt-1">Projection: ${escapeHtml(s.projection)} · ref: ${s.refLat.toFixed(3)}, ${s.refLon.toFixed(3)}</div>`;}catch(e){out.innerHTML=`<div class="alert alert-danger mb-0">${escapeHtml(e.message)}</div>`;}}
+function exportNamelist(){if(domains.length!==Number(countEl.value)){showError(`Complete all ${countEl.value} selected domains before export.`);return;}try{const {dx,dy}=spacing(),s=settings(),rs=ratios(),v=WRF.validate(domains,dx,dy,rs,s);if(v.errors.length)throw new Error(`Fix validation errors before export: ${v.errors.join(' ')}`);const namelist=generateNamelist(domains.map(d=>d.getBounds()),{dx,dy,ratios:rs,...s,geogDataRes:document.getElementById('geogResInput').value});const blob=new Blob([namelist],{type:'text/plain;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='namelist.wps';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){showError(e.message);}}
+function showMessage(m){document.getElementById('output').innerHTML=`<div class="alert alert-info mb-0">${escapeHtml(m)}</div>`;}function showError(m){document.getElementById('output').innerHTML=`<div class="alert alert-danger mb-0">${escapeHtml(m)}</div>`;}function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+countEl.addEventListener('change',()=>{buildRatioTable();clearDomains(false);updateOutputFromDomains();});document.getElementById('nestMode').addEventListener('change',updateOutputFromDomains);document.getElementById('drawBtn').addEventListener('click',startDrawing);document.getElementById('clearBtn').addEventListener('click',()=>clearDomains(true));document.getElementById('exportBtn').addEventListener('click',exportNamelist);document.getElementById('projectionInput').addEventListener('change',updateProjectionUI);['autoCenterInput','dxInput','dyInput','trueLat1Input','trueLat2Input','polarLatInput','polarHemisphere','geogResInput'].forEach(id=>document.getElementById(id).addEventListener('input',updateOutputFromDomains));buildRatioTable();updateProjectionUI();
