@@ -1,5 +1,6 @@
 // WRF Domain Wizard
-// Uses the current map extent as the parent domain and creates centered nested domains.
+// The map extent is used as the parent domain. Nested domains are centered and
+// reduced to one-third of the parent width/height for a 3:1 nesting ratio.
 
 const map = L.map('map').setView([20, 78], 5);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -9,8 +10,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 const drawnItems = new L.FeatureGroup().addTo(map);
 const domains = [];
-
 const domainColors = ['#dc3545', '#0d6efd', '#198754'];
+
 const drawControl = new L.Control.Draw({
   edit: { featureGroup: drawnItems, edit: true, remove: true },
   draw: {
@@ -49,7 +50,7 @@ function drawDomains() {
 
   let parentBounds = bounds;
   for (let i = 0; i < domainCount; i++) {
-    const domainBounds = i === 0 ? parentBounds : shrinkBounds(parentBounds, 0.80);
+    const domainBounds = i === 0 ? parentBounds : shrinkBounds(parentBounds, 1 / 3);
     const domain = L.rectangle(domainBounds, {
       color: domainColors[i],
       weight: 2,
@@ -116,8 +117,7 @@ function exportNamelist() {
 }
 
 function showError(message) {
-  const output = document.getElementById('output');
-  output.innerHTML = `<div class="alert alert-danger mb-0">${escapeHtml(message)}</div>`;
+  document.getElementById('output').innerHTML = `<div class="alert alert-danger mb-0">${escapeHtml(message)}</div>`;
 }
 
 function escapeHtml(value) {
