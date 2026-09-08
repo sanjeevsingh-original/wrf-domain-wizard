@@ -1,7 +1,8 @@
-// Single-owner manual drawing controller.
-// Uses Leaflet.Draw's own rectangle toolbar so there is only one drawing engine.
+// Robust single-owner manual drawing controller.
+// This intentionally creates Leaflet.Draw's rectangle handler directly instead
+// of depending on the toolbar button or on script.js's drawing state.
 (function(){
-  if(typeof map==='undefined' || typeof L==='undefined' || typeof domains==='undefined') return;
+  if(typeof L==='undefined' || typeof map==='undefined' || typeof domains==='undefined') return;
 
   const button=document.getElementById('drawBtn');
   const countEl=document.getElementById('domainCount');
@@ -9,6 +10,7 @@
   if(!button || !countEl || !modeEl) return;
 
   let active=false;
+  let handler=null;
 
   function count(){
     const n=Number(countEl.value);
@@ -17,12 +19,17 @@
 
   function padDomain(i){return String(i+1).padStart(2,'0');}
 
-  function rectangleToolbarButton(){
-    return document.querySelector('.leaflet-draw-draw-rectangle');
+  function stopHandler(){
+    if(handler){
+      try{handler.disable();}catch(e){}
+      handler=null;
+    }
   }
 
-  function activateRectangle(){
+  function activate(){
+    stopHandler();
     if(!active) return;
+
     const n=count();
     if(domains.length>=n){
       active=false;
@@ -35,19 +42,25 @@
       ? 'Draw d01 now: click and drag on the map.'
       : `Draw d${padDomain(index)} now. It must be fully contained inside d${padDomain(index-1)}.`);
 
-    const btn=rectangleToolbarButton();
-    if(!btn){
-      showError('Leaflet Draw rectangle tool could not be initialized. Please reload the page.');
+    if(typeof L.Draw.Rectangle!=='function'){
       active=false;
+      showError('Leaflet Draw rectangle support is unavailable. Please reload the page.');
       return;
     }
 
-    // Use the exact same rectangle tool exposed by the Leaflet.Draw toolbar.
-    btn.click();
+    try{
+      handler=new L.Draw.Rectangle(map,{shapeOptions:{color:'#dc3545',weight:2,fillOpacity:.08}});
+      handler.enable();
+    }catch(e){
+      handler=null;
+      active=false;
+      showError(`Could not activate rectangle drawing: ${e.message}`);
+    }
   }
 
   function start(){
     active=false;
+    stopHandler();
 
     if(modeEl.value==='auto'){
       clearDomains(false);
@@ -57,22 +70,39 @@
 
     clearDomains(false);
     active=true;
-    setTimeout(activateRectangle,80);
+    setTimeout(activate,50);
   }
 
-  // Do not remove Leaflet's own events. The original application CREATED
-  // listener remains installed but is inactive because its drawingActive flag
-  // is false. This controller is the only active manual workflow.
+  // Remove script.js's original click handler from the button. Its handler
+  // remains in memory but is attached to the replaced DOM node, so it cannot
+  // start a competing drawing workflow.
+  const replacement=button.cloneNode(true);
+  button.replaceWith(replacement);
+  replacement.addEventListener('click',start);
+
+  countEl.addEventListener('change',function(){
+    active=false;
+    stopHandler();
+  });
+
+  // The original CREATED listener remains registered, but its drawingActive
+  // flag is deliberately false because start() never changes that variable.
+  // Therefore this is the only listener that accepts manually drawn domains.
   map.on(L.Draw.Event.CREATED,function(e){
     if(!active) return;
 
+    stopHandler();
+
     const n=count();
     const index=domains.length;
-    if(index>=n){active=false;return;}
+    if(index>=n){
+      active=false;
+      return;
+    }
 
     if(index>0 && !domains[index-1].getBounds().contains(e.layer.getBounds())){
       showError(`d${padDomain(index)} must be fully contained inside d${padDomain(index-1)}. Draw it again.`);
-      setTimeout(activateRectangle,120);
+      setTimeout(activate,80);
       return;
     }
 
@@ -80,17 +110,10 @@
     updateOutputFromDomains();
 
     if(domains.length<n){
-      setTimeout(activateRectangle,180);
+      setTimeout(activate,100);
     }else{
       active=false;
       showMessage(`All ${n} domains are drawn. Edit rectangles as needed, then export after validation.`);
     }
   });
-
-  // Replace the button so script.js's old click listener cannot also start a
-  // second workflow.
-  const replacement=button.cloneNode(true);
-  button.replaceWith(replacement);
-  replacement.addEventListener('click',start);
-  countEl.addEventListener('change',function(){active=false;});
 })();
