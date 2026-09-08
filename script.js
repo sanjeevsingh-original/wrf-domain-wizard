@@ -1,128 +1,127 @@
-// Initialize map 
-const map = L.map('map').setView([20, 0], 2); 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-  attribution: '© OpenStreetMap' 
-}).addTo(map); 
+// WRF Domain Wizard
+// The map extent is used as the parent domain. Nested domains are centered and
+// reduced to one-third of the parent width/height for a 3:1 nesting ratio.
 
-let drawnItems = new L.FeatureGroup(); 
-map.addLayer(drawnItems);
+const map = L.map('map').setView([20, 78], 5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors',
+  maxZoom: 19
+}).addTo(map);
 
-// Store domain references
+const drawnItems = new L.FeatureGroup().addTo(map);
 const domains = [];
+const domainColors = ['#dc3545', '#0d6efd', '#198754'];
 
-// Initialize draw control
 const drawControl = new L.Control.Draw({
-  edit: {
-    featureGroup: drawnItems,
-    edit: false,
-    remove: false
-  },
-  draw: false
+  edit: { featureGroup: drawnItems, edit: true, remove: true },
+  draw: {
+    rectangle: false,
+    polygon: false,
+    circle: false,
+    circlemarker: false,
+    marker: false,
+    polyline: false
+  }
 });
 map.addControl(drawControl);
 
-// Ensure map is fully initialized
-map.whenReady(function() {
-  document.getElementById('drawBtn').addEventListener('click', drawDomains);
-  document.getElementById('exportBtn').addEventListener('click', exportNamelist);
+map.on(L.Draw.Event.EDITED, updateOutputFromDomains);
+map.on(L.Draw.Event.DELETED, () => {
+  domains.length = 0;
+  drawnItems.eachLayer(layer => domains.push(layer));
+  domains.sort((a, b) => (a.options.domainIndex ?? 0) - (b.options.domainIndex ?? 0));
+  updateOutputFromDomains();
 });
 
+document.getElementById('drawBtn').addEventListener('click', drawDomains);
+document.getElementById('exportBtn').addEventListener('click', exportNamelist);
+
 function drawDomains() {
-  try {
-    // Clear previous domains
-    drawnItems.clearLayers();
-    domains.length = 0;
-    
-    const domainCount = parseInt(document.getElementById('domainCount').value);
-    const bounds = map.getBounds();
-    
-    // Validate bounds
-    if (!bounds.isValid()) {
-      throw new Error("Invalid map bounds. Please zoom to a valid area.");
-    }
-    
-    // Draw each domain
-    for (let i = 0; i < domainCount; i++) {
-      const nestFactor = 0.8 ** i;
-      const nestedBounds = calculateNestedBounds(bounds, nestFactor);
-      
-      const domain = L.rectangle(nestedBounds, {  
-        color: i === 0 ? 'red' : i === 1 ? 'blue' : 'green',  
-        weight: 2,
-        fillOpacity: 0.1,
-        className: `domain-${i}`
-      }).addTo(drawnItems);
-      
-      // Enable editing
-      domain.editing = new L.Edit.Rectangle(map, domain);
-      domain.editing.enable();
-      
-      // Store reference
-      domains.push(domain);
-      
-      // Update output when domain is modified
-      domain.on('edit', function() {
-        updateOutputFromDomains();
-      });
-    }
-    
-    updateOutputFromDomains();
-    
-  } catch (error) {
-    console.error("Drawing error:", error);
-    alert(`Error: ${error.message}`);
+  const domainCount = Number(document.getElementById('domainCount').value);
+  const bounds = map.getBounds();
+
+  if (!bounds.isValid() || bounds.getNorth() <= bounds.getSouth() || bounds.getEast() <= bounds.getWest()) {
+    showError('Please zoom to a valid geographic area first.');
+    return;
   }
+
+  drawnItems.clearLayers();
+  domains.length = 0;
+
+  let parentBounds = bounds;
+  for (let i = 0; i < domainCount; i++) {
+    const domainBounds = i === 0 ? parentBounds : shrinkBounds(parentBounds, 1 / 3);
+    const domain = L.rectangle(domainBounds, {
+      color: domainColors[i],
+      weight: 2,
+      fillOpacity: 0.08,
+      domainIndex: i
+    }).addTo(drawnItems);
+
+    domain.bindTooltip(`d${i + 1}`, { sticky: true });
+    domains.push(domain);
+    parentBounds = domainBounds;
+  }
+
+  updateOutputFromDomains();
 }
 
-function calculateNestedBounds(bounds, nestFactor) {
+function shrinkBounds(bounds, factor) {
+  const center = bounds.getCenter();
+  const latHalf = (bounds.getNorth() - bounds.getSouth()) * factor / 2;
+  const lonHalf = (bounds.getEast() - bounds.getWest()) * factor / 2;
   return L.latLngBounds(
-    [
-      bounds.getSouth() + (bounds.getCenter().lat - bounds.getSouth()) * (1 - nestFactor),
-      bounds.getWest() + (bounds.getCenter().lng - bounds.getWest()) * (1 - nestFactor)
-    ],
-    [
-      bounds.getNorth() - (bounds.getNorth() - bounds.getCenter().lat) * (1 - nestFactor),
-      bounds.getEast() - (bounds.getEast() - bounds.getCenter().lng) * (1 - nestFactor)
-    ]
+    [center.lat - latHalf, center.lng - lonHalf],
+    [center.lat + latHalf, center.lng + lonHalf]
   );
 }
 
 function updateOutputFromDomains() {
-  let output = `<h5>Domain Boundaries</h5>`;
-  
-  domains.forEach((domain, i) => {
-    const bounds = domain.getBounds();
-    output += `
-      <p><strong>Domain ${i + 1}:</strong><br>
-      SW: ${bounds.getSouthWest().lat.toFixed(4)}, ${bounds.getSouthWest().lng.toFixed(4)}<br>
-      NE: ${bounds.getNorthEast().lat.toFixed(4)}, ${bounds.getNorthEast().lng.toFixed(4)}
-      </p>
-    `;
-  });
-  
-  document.getElementById('output').innerHTML = output;
+  const output = document.getElementById('output');
+  if (!domains.length) {
+    output.innerHTML = '<p class="text-muted mb-0">Draw domains to see their boundaries.</p>';
+    return;
+  }
+
+  output.innerHTML = '<h5>Domain Boundaries</h5>' + domains.map((domain, i) => {
+    const b = domain.getBounds();
+    return `<div class="domain-summary mb-2">
+      <strong>Domain ${i + 1}</strong><br>
+      SW: ${b.getSouthWest().lat.toFixed(4)}, ${b.getSouthWest().lng.toFixed(4)}<br>
+      NE: ${b.getNorthEast().lat.toFixed(4)}, ${b.getNorthEast().lng.toFixed(4)}
+    </div>`;
+  }).join('');
 }
 
 function exportNamelist() {
+  if (!domains.length) {
+    showError('Please draw domains first.');
+    return;
+  }
+
   try {
-    if (domains.length === 0) {
-      throw new Error("Please draw domains first");
-    }
-    
-    const domainCount = domains.length;
-    const bounds = domains[0].getBounds();
-    
-    const namelist = generateNamelist(bounds, domainCount);
-    
-    const blob = new Blob([namelist], { type: 'text/plain' });
+    const namelist = generateNamelist(domains.map(d => d.getBounds()));
+    const blob = new Blob([namelist], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'namelist.wps';
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   } catch (error) {
-    console.error("Export error:", error);
-    alert(`Error: ${error.message}`);
+    console.error(error);
+    showError(error.message || 'Unable to generate namelist.wps.');
   }
+}
+
+function showError(message) {
+  document.getElementById('output').innerHTML = `<div class="alert alert-danger mb-0">${escapeHtml(message)}</div>`;
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>'"]/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+  }[c]));
 }
