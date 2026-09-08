@@ -9,7 +9,6 @@ const domains = [];
 const domainColors = ['#dc3545', '#0d6efd', '#198754', '#6f42c1', '#fd7e14', '#20c997', '#d63384', '#6610f2', '#1982c4', '#495057'];
 const domainCountInput = document.getElementById('domainCount');
 const ratioInput = document.getElementById('nestRatio');
-let drawingActive = false;
 
 const drawControl = new L.Control.Draw({
   edit: { featureGroup: drawnItems, edit: true, remove: true },
@@ -36,19 +35,20 @@ map.on(L.Draw.Event.CREATED, event => {
   layer.options.domainIndex = index;
   layer.setStyle({ color: domainColors[index], weight: 2, fillOpacity: 0.08 });
   layer.bindTooltip(`d${index + 1}`, { sticky: true });
-  drawnItems.addLayer(layer);
-  domains.push(layer);
 
   if (index > 0 && !domains[index - 1].getBounds().contains(layer.getBounds())) {
-    layer.setStyle({ color: '#dc3545', dashArray: '6 4' });
-    showError(`d${index + 1} must be fully contained inside d${index}. Please edit or redraw it.`);
-  } else {
-    updateOutputFromDomains();
+    showError(`d${index + 1} must be fully contained inside d${index}. Draw it again inside the parent domain.`);
+    return;
   }
 
+  drawnItems.addLayer(layer);
+  domains.push(layer);
+  updateOutputFromDomains();
+
   if (domains.length === expected) {
-    drawingActive = false;
-    showMessage(`All ${expected} domain${expected === 1 ? '' : 's'} drawn. You can edit them using the map edit tool.`);
+    showMessage(`All ${expected} domain${expected === 1 ? '' : 's'} drawn. Use the map edit tool to refine any rectangle.`);
+  } else {
+    showMessage(`d${index + 1} added. Now draw d${index + 2} inside d${index + 1}.`);
   }
 });
 
@@ -62,7 +62,7 @@ map.on(L.Draw.Event.DELETED, () => {
 });
 
 document.getElementById('drawBtn').addEventListener('click', startDrawing);
-document.getElementById('clearBtn').addEventListener('click', clearDomains);
+document.getElementById('clearBtn').addEventListener('click', () => clearDomains(true));
 document.getElementById('exportBtn').addEventListener('click', exportNamelist);
 document.getElementById('projectionInput').addEventListener('change', updateProjectionUI);
 document.getElementById('autoCenterInput').addEventListener('change', updateOutputFromDomains);
@@ -79,17 +79,14 @@ updateProjectionUI();
 
 function startDrawing() {
   clearDomains(false);
-  drawingActive = true;
   const expected = Number(domainCountInput.value);
   showMessage(`Draw d01 first, then d02 through d${String(expected).padStart(2, '0')}. Use the rectangle tool in the map toolbar.`);
-  // Programmatically activate Leaflet.Draw's rectangle tool for the first domain.
-  new L.Draw.Rectangle(map, drawControl.options.draw.rectangle ? drawControl.options.draw : {}).enable();
+  new L.Draw.Rectangle(map).enable();
 }
 
 function clearDomains(show = true) {
   drawnItems.clearLayers();
   domains.length = 0;
-  drawingActive = false;
   if (show) showMessage('All domains cleared. Select the number of domains and start drawing again.');
   else updateOutputFromDomains();
 }
