@@ -31,16 +31,33 @@ const WRF = {
     if (!Number.isFinite(dy) || dy < 100) errors.push('dy must be at least 100 m.');
     if (!domains.length) errors.push('At least one domain is required.');
     let cumulativeRatio = 1;
+
     for (let i = 0; i < domains.length; i++) {
+      let ratio = 1;
       if (i > 0) {
-        const ratio = Number(ratios[i]);
-        if (!Number.isInteger(ratio) || ratio < 2) errors.push(`d${i + 1} has an invalid nesting ratio.`);
-        cumulativeRatio *= ratio;
+        ratio = Number(ratios[i]);
+        if (!Number.isInteger(ratio) || ratio < 2 || ratio > 10) {
+          errors.push(`d${i + 1} has an invalid nesting ratio.`);
+        } else {
+          cumulativeRatio *= ratio;
+        }
+        if (!domains[i - 1].getBounds().contains(domains[i].getBounds())) {
+          errors.push(`d${i + 1} is not fully contained inside d${i}.`);
+        }
       }
+
       const g = this.gridDimensions(domains[i].getBounds(), dx / cumulativeRatio, dy / cumulativeRatio);
-      if (g.e_we < 20 || g.e_sn < 20) errors.push(`d${i + 1} is too small (${g.e_we} × ${g.e_sn} grid points).`);
-      if (i > 0 && !domains[i - 1].getBounds().contains(domains[i].getBounds())) {
-        errors.push(`d${i + 1} is not fully contained inside d${i}.`);
+      const ew = i === 0 ? g.e_we : this.normalizeGridDimension(g.e_we, ratio);
+      const es = i === 0 ? g.e_sn : this.normalizeGridDimension(g.e_sn, ratio);
+      if (ew < 20 || es < 20) errors.push(`d${i + 1} is too small (${ew} × ${es} grid points).`);
+
+      if (i > 0) {
+        const parentGrid = this.gridDimensions(domains[i - 1].getBounds(), dx / (cumulativeRatio / ratio), dy / (cumulativeRatio / ratio));
+        const childCellsX = (ew - 1) / ratio;
+        const childCellsY = (es - 1) / ratio;
+        if (childCellsX > parentGrid.e_we - 1 || childCellsY > parentGrid.e_sn - 1) {
+          errors.push(`d${i + 1} is too large for d${i} at ${ratio}:1 nesting (${ew} × ${es}). Draw a smaller child domain.`);
+        }
       }
     }
     return errors;
