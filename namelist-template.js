@@ -1,63 +1,60 @@
-function generateNamelist(boundsList) {
-  if (!Array.isArray(boundsList) || boundsList.length === 0) {
-    throw new Error('At least one domain is required.');
-  }
+function generateNamelist(boundsList, options = {}) {
+  if (!Array.isArray(boundsList) || !boundsList.length) throw new Error('At least one domain is required.');
 
   const maxDom = boundsList.length;
-  const dx = readGridSpacing('dxInput', 10000);
-  const dy = readGridSpacing('dyInput', 10000);
-  const parentGridRatio = [1];
+  const dx = Number(options.dx ?? 9000);
+  const dy = Number(options.dy ?? 9000);
+  const ratios = options.ratios || [1, ...Array(maxDom - 1).fill(3)];
+  const projection = options.projection || 'lambert';
+  const refLat = Number(options.refLat ?? boundsList[0].getCenter().lat);
+  const refLon = Number(options.refLon ?? boundsList[0].getCenter().lng);
+  const truelat1 = Number(options.truelat1 ?? 20);
+  const truelat2 = Number(options.truelat2 ?? 30);
+  const geogDataRes = options.geogDataRes || 'default';
+
+  if (!Number.isFinite(dx) || !Number.isFinite(dy) || dx < 100 || dy < 100) {
+    throw new Error('dx and dy must be valid values of at least 100 m.');
+  }
+
   const parentId = [1];
   const iParentStart = [1];
   const jParentStart = [1];
   const eWe = [];
   const eSn = [];
+  let cumulativeRatio = 1;
 
   for (let i = 0; i < maxDom; i++) {
-    const b = boundsList[i];
-    const centerLat = b.getCenter().lat;
-    const widthKm = haversineKm(centerLat, b.getWest(), centerLat, b.getEast());
-    const heightKm = haversineKm(b.getSouth(), b.getCenter().lng, b.getNorth(), b.getCenter().lng);
+    if (i > 0) { parentId.push(i); cumulativeRatio *= ratios[i]; }
+    const childDx = dx / cumulativeRatio;
+    const childDy = dy / cumulativeRatio;
+    const grid = WRF.gridDimensions(boundsList[i], childDx, childDy);
+    let ew = grid.e_we;
+    let es = grid.e_sn;
 
-    let ew = Math.max(4, Math.round((widthKm * 1000) / dx) + 1);
-    let es = Math.max(4, Math.round((heightKm * 1000) / dy) + 1);
-
-    // With the default 3:1 nesting ratio, make nested dimensions compatible
-    // with the parent-grid relationship: (e_we - 1) and (e_sn - 1) are divisible by 3.
     if (i > 0) {
-      ew = Math.max(4, Math.floor((ew - 1) / 3) * 3 + 1);
-      es = Math.max(4, Math.floor((es - 1) / 3) * 3 + 1);
+      ew = WRF.normalizeGridDimension(ew, ratios[i]);
+      es = WRF.normalizeGridDimension(es, ratios[i]);
     }
-
-    eWe.push(ew);
-    eSn.push(es);
+    eWe.push(ew); eSn.push(es);
 
     if (i > 0) {
       const parent = boundsList[i - 1];
-      const ratio = 3;
-      parentGridRatio.push(ratio);
-      parentId.push(i);
-
-      const xFraction = (b.getWest() - parent.getWest()) / (parent.getEast() - parent.getWest());
-      const yFraction = (b.getSouth() - parent.getSouth()) / (parent.getNorth() - parent.getSouth());
-      const childWidthOnParent = Math.round((ew - 1) / ratio);
-      const childHeightOnParent = Math.round((es - 1) / ratio);
-
-      iParentStart.push(clamp(
-        Math.round(xFraction * (eWe[i - 1] - 1)) + 1,
-        1,
-        Math.max(1, eWe[i - 1] - childWidthOnParent)
-      ));
-      jParentStart.push(clamp(
-        Math.round(yFraction * (eSn[i - 1] - 1)) + 1,
-        1,
-        Math.max(1, eSn[i - 1] - childHeightOnParent)
-      ));
+      const ratio = ratios[i];
+      const childCellsX = Math.max(1, Math.round((ew - 1) / ratio));
+      const childCellsY = Math.max(1, Math.round((es - 1) / ratio));
+      const xFraction = (boundsList[i].getWest() - parent.getWest()) / (parent.getEast() - parent.getWest());
+      const yFraction = (boundsList[i].getSouth() - parent.getSouth()) / (parent.getNorth() - parent.getSouth());
+      iParentStart.push(clamp(Math.round(xFraction * (eWe[i - 1] - 1)) + 1, 1, Math.max(1, eWe[i - 1] - childCellsX)));
+      jParentStart.push(clamp(Math.round(yFraction * (eSn[i - 1] - 1)) + 1, 1, Math.max(1, eSn[i - 1] - childCellsY)));
     }
   }
 
-  const ref = boundsList[0].getCenter();
   const repeat = value => Array(maxDom).fill(value).join(', ');
+  const projectionLines = projection === 'lambert'
+    ? ` map_proj          = 'lambert',\n ref_lat           = ${refLat.toFixed(4)},\n ref_lon           = ${refLon.toFixed(4)},\n truelat1          = ${truelat1.toFixed(4)},\n truelat2          = ${truelat2.toFixed(4)},\n stand_lon         = ${refLon.toFixed(4)},`
+    : projection === 'mercator'
+      ? ` map_proj          = 'mercator',\n ref_lat           = ${refLat.toFixed(4)},\n ref_lon           = ${refLon.toFixed(4)},\n stand_lon         = ${refLon.toFixed(4)},`
+      : ` map_proj          = 'lat-lon',\n ref_lat           = ${refLat.toFixed(4)},\n ref_lon           = ${refLon.toFixed(4)},\n stand_lon         = ${refLon.toFixed(4)},`;
 
   return `&share
  wrf_core = 'ARW',
@@ -72,20 +69,15 @@ function generateNamelist(boundsList) {
 
 &geogrid
  parent_id         = ${parentId.join(', ')},
- parent_grid_ratio = ${parentGridRatio.join(', ')},
+ parent_grid_ratio = ${ratios.join(', ')},
  i_parent_start    = ${iParentStart.join(', ')},
  j_parent_start    = ${jParentStart.join(', ')},
  e_we              = ${eWe.join(', ')},
  e_sn              = ${eSn.join(', ')},
- geog_data_res     = ${repeat("'default'")},
+ geog_data_res     = ${repeat(`'${geogDataRes}'`)},
  dx                = ${dx},
  dy                = ${dy},
- map_proj          = 'lat-lon',
- ref_lat           = ${ref.lat.toFixed(4)},
- ref_lon           = ${ref.lng.toFixed(4)},
- truelat1          = ${ref.lat.toFixed(4)},
- truelat2          = ${ref.lat.toFixed(4)},
- stand_lon         = ${ref.lng.toFixed(4)},
+${projectionLines}
  geog_data_path    = './geog/',
 /
 
@@ -101,25 +93,4 @@ function generateNamelist(boundsList) {
 `;
 }
 
-function readGridSpacing(id, fallback) {
-  const element = document.getElementById(id);
-  const value = Number(element?.value);
-  if (!Number.isFinite(value) || value < 100) {
-    throw new Error('dx and dy must be valid values of at least 100 m.');
-  }
-  return value;
-}
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
-}
-
-function haversineKm(lat1, lon1, lat2, lon2) {
-  const R = 6371.0088;
-  const toRad = value => value * Math.PI / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(a));
-}
+function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
