@@ -1,48 +1,56 @@
+html, body {
+  min-height: 100%;
+}
+
+body {
+  background: #f8f9fa;
+}
+
 #map {
-  height: 600px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
+  height: 70vh;
+  min-height: 520px;
+  border-radius: 10px;
+  border: 1px solid #dee2e6;
+  overflow: hidden;
 }
 
 .controls {
-  height: 600px;
+  min-height: 70vh;
+  max-height: 70vh;
   overflow-y: auto;
+  background: #fff !important;
 }
 
 h1 {
-  color: #2c3e50;
-  margin-bottom: 20px;
+  color: #212529;
+  font-weight: 700;
 }
 
-/* Domain styling */
-.domain-0 {
-  color: red;
-  fill-opacity: 0.1;
-  stroke: red;
+.domain-summary {
+  padding: 8px 10px;
+  border-left: 4px solid #0d6efd;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-size: 0.92rem;
 }
 
-.domain-1 {
-  color: blue;
-  fill-opacity: 0.1;
-  stroke: blue;
+.form-label {
+  font-weight: 600;
 }
 
-.domain-2 {
-  color: green;
-  fill-opacity: 0.1;
-  stroke: green;
+.leaflet-control-layers,
+.leaflet-bar {
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
 }
 
-/* Edit handles */
-.leaflet-marker-icon {
-  background-color: white;
-  border: 2px solid #333;
-  border-radius: 50%;
-  width: 10px !important;
-  height: 10px !important;
-}
+@media (max-width: 991.98px) {
+  #map {
+    height: 60vh;
+    min-height: 420px;
+  }
 
-.leaflet-div-icon {
-  background: none;
-  border: none;
+  .controls {
+    min-height: auto;
+    max-height: none;
+  }
 }
