@@ -1,59 +1,82 @@
 # WRF Domain Wizard
 
-Interactive WRF/WPS domain planning tool for quickly designing nested domains and generating a starter `namelist.wps`.
+Interactive WRF/WPS domain-design and `namelist.wps` planning tool for atmospheric-modeling research.
 
-## Features
+## What it does
 
-- Interactive Leaflet map
-- 1–3 nested domains
-- Lambert Conformal, Mercator and Lat-Lon map projections
-- Configurable `dx` / `dy`
-- Domain center/reference latitude and longitude
-- Standard 3:1 nesting ratio with validation
-- Automatic `e_we` / `e_sn` estimation from geographic extent
-- Automatic parent start indices
-- WPS `&share`, `&geogrid`, `&ungrib`, and `&metgrid` sections
-- Editable domain rectangles
-- Basic grid/nesting validation before export
+- Draw **1–10 nested domains** directly on an interactive map.
+- Enforce sequential parent/child containment.
+- Set an **independent integer nesting ratio (2:1–10:1) for every child domain**.
+- Automatically flag even ratios because odd ratios are generally preferred for two-way nesting.
+- Support Lambert Conformal, Mercator, Polar Stereographic and Lat-Lon projections.
+- Use projection-aware horizontal grid calculations through `proj4js` for projected grids.
+- Calculate grid dimensions, child grid spacing and parent start indices.
+- Snap nested `e_we`/`e_sn` to parent-grid-ratio compatibility.
+- Show validation errors and scientific warnings before export.
+- Estimate total horizontal grid-cell count for planning computational demand.
+- Configure `start_date`, `end_date`, `interval_seconds` and `geog_data_path` instead of silently using production-like placeholders.
+- Export a WPS `namelist.wps` containing `&share`, `&geogrid`, `&ungrib` and `&metgrid` sections.
+- Provide editable rectangles so the researcher can refine each domain interactively.
 
-## Important scientific note
+## Recommended workflow
 
-The generated file is a **planning/starter namelist**, not a replacement for `geogrid.exe`. For a production WRF experiment, verify the selected projection, grid spacing, nesting alignment, domain dimensions, geographic data resolution, and WPS/WRF version requirements before running WPS.
-
-For nested domains, `parent_grid_ratio` defaults to 3. Child dimensions are checked for compatibility with the parent grid and the child start indices are calculated from the geographic centers.
-
-## Usage
-
-1. Open `index.html` in a browser or deploy the repository with GitHub Pages/Netlify.
-2. Zoom the map to the intended parent-domain region.
-3. Select the number of domains.
-4. Select a projection and set `dx`/`dy`.
-5. Set the reference latitude/longitude if desired, or use the parent-domain center.
-6. Click **Draw Domains**.
+1. Select the number of domains (1–10).
+2. Choose **Draw manually** or **Auto-nest from d01**.
+3. Set each parent→child nesting ratio. Use 3:1 or 5:1 unless your experiment has a reason to use another integer ratio.
+4. Select the WRF/WPS map projection and set `dx`/`dy` for d01.
+5. Set projection parameters and reference coordinates.
+6. Draw d01, then d02, d03, etc. Each child must be fully contained within its parent.
 7. Edit rectangles if necessary.
-8. Review validation messages.
-9. Export `namelist.wps`.
+8. Enter the actual WPS simulation dates, forcing interval and geographic-data path.
+9. Review all errors and warnings.
+10. Export `namelist.wps`.
+11. **Run the generated file through your installed WPS `geogrid.exe` and inspect the resulting `geo_em.d0*.nc` files before a scientific simulation.**
 
-## Projection guidance
+## Scientific scope and limitations
 
-- **Lambert Conformal (lambert):** commonly used for mid-latitude/regional WRF domains. Set `truelat1`, `truelat2`, and `stand_lon` appropriately.
-- **Mercator (mercator):** useful for tropical and equatorial regional domains.
-- **Lat-Lon (lat-lon):** retained mainly for compatibility/planning; confirm that it is appropriate for your experiment.
+This project is a **domain-design and configuration assistant**, not a replacement for WPS. Browser calculations reproduce the intended projection/grid relationships for planning, but exact WPS behavior also depends on the WPS/WRF version, map-projection implementation, static-data packages, and the final `geogrid.exe` execution.
 
-## Terrain / geographic data
+In particular, the map rectangle is a geographic drawing interface while WRF grids are defined in the selected projection. The application therefore performs projection-aware calculations for grid dimensions and nesting indices, but final domain placement and static-data availability must be verified with WPS itself.
 
-`geog_data_res` is selectable in the UI. The tool writes the chosen resolution into the WPS namelist but does not download or bundle terrain data. Configure `geog_data_path` to the actual WPS geographic-data directory on your system.
+The tool does not download or bundle WPS geographic data. `geog_data_path` must point to a valid local WPS geographic-data directory on the machine running WPS.
 
-## Validation
+The displayed grid-cell count is a horizontal-cell estimate. Actual WRF memory, runtime, MPI decomposition and I/O requirements depend on vertical levels, physics, nesting mode, output frequency, hardware and other model settings.
 
-The browser performs sanity checks for:
+## WPS variables generated
 
-- positive grid spacing
-- valid latitude/longitude
-- projection-specific parameters
-- sufficient grid dimensions
-- nested-domain containment
-- 3:1 nesting compatibility
-- parent start indices
+The export includes the principal domain variables:
 
-Always validate the final file with your installed WPS tools before a scientific simulation.
+- `max_dom`
+- `parent_id`
+- `parent_grid_ratio`
+- `i_parent_start`
+- `j_parent_start`
+- `e_we`
+- `e_sn`
+- `dx`, `dy`
+- `map_proj`
+- `ref_lat`, `ref_lon`, `stand_lon`
+- projection-specific true latitude parameters
+- `geog_data_res`
+- `geog_data_path`
+- WPS date/interval settings
+
+## Reproducibility
+
+For a paper, thesis or project, record at minimum:
+
+- WRF/WPS version and commit/release where relevant
+- domain projection and all projection parameters
+- d01 `dx`/`dy`
+- every parent→child `parent_grid_ratio`
+- `e_we`, `e_sn`, `i_parent_start`, `j_parent_start`
+- geographic-data package/version and path configuration
+- simulation dates and forcing interval
+- final `namelist.wps`
+- successful `geogrid.exe` output and `geo_em` files
+
+The repository includes `CITATION.cff` so the software can be cited as research software.
+
+## License
+
+MIT. See `CITATION.cff` for citation metadata.
