@@ -4,53 +4,72 @@ function generateNamelist(boundsList) {
   }
 
   const maxDom = boundsList.length;
+  const dx = 10000;
+  const dy = 10000;
   const parentGridRatio = [1];
+  const parentId = [1];
   const iParentStart = [1];
   const jParentStart = [1];
   const eWe = [];
   const eSn = [];
 
-  // Default horizontal grid spacing. Change these values to match your WRF setup.
-  const dx = 10000;
-  const dy = 10000;
-
+  // Calculate grid dimensions from the actual geographic rectangles.
   for (let i = 0; i < maxDom; i++) {
     const b = boundsList[i];
     const centerLat = b.getCenter().lat;
     const widthKm = haversineKm(centerLat, b.getWest(), centerLat, b.getEast());
     const heightKm = haversineKm(b.getSouth(), b.getCenter().lng, b.getNorth(), b.getCenter().lng);
 
-    // Grid dimensions are grid points, so add one after converting cell count to points.
-    eWe.push(Math.max(3, Math.round((widthKm * 1000) / dx) + 1));
-    eSn.push(Math.max(3, Math.round((heightKm * 1000) / dy) + 1));
+    let ew = Math.max(4, Math.round((widthKm * 1000) / dx) + 1);
+    let es = Math.max(4, Math.round((heightKm * 1000) / dy) + 1);
+
+    // For nested domains with a 3:1 ratio, make (e_we-1) and (e_sn-1)
+    // divisible by 3 so the nest aligns cleanly with the parent grid.
+    if (i > 0) {
+      ew = Math.max(4, Math.floor((ew - 1) / 3) * 3 + 1);
+      es = Math.max(4, Math.floor((es - 1) / 3) * 3 + 1);
+    }
+
+    eWe.push(ew);
+    eSn.push(es);
 
     if (i > 0) {
       const parent = boundsList[i - 1];
+      const child = b;
+      const parentEw = eWe[i - 1];
+      const parentEs = eSn[i - 1];
       const ratio = 3;
+
       parentGridRatio.push(ratio);
+      parentId.push(i);
 
-      const parentWidthKm = haversineKm(parent.getCenter().lat, parent.getWest(), parent.getCenter().lat, parent.getEast());
-      const parentHeightKm = haversineKm(parent.getSouth(), parent.getCenter().lng, parent.getNorth(), parent.getCenter().lng);
-      const childCenter = b.getCenter();
+      const xFraction = (child.getWest() - parent.getWest()) / (parent.getEast() - parent.getWest());
+      const yFraction = (child.getSouth() - parent.getSouth()) / (parent.getNorth() - parent.getSouth());
 
-      const parentDxKm = parentWidthKm / Math.max(1, eWe[i - 1] - 1);
-      const parentDyKm = parentHeightKm / Math.max(1, eSn[i - 1] - 1);
-      const westOffsetKm = haversineKm(parent.getCenter().lat, parent.getWest(), parent.getCenter().lat, childCenter.lng);
-      const southOffsetKm = haversineKm(parent.getSouth(), parent.getCenter().lng, childCenter.lat, parent.getCenter().lng);
-
-      iParentStart.push(Math.max(1, Math.round(westOffsetKm / parentDxKm) + 1));
-      jParentStart.push(Math.max(1, Math.round(southOffsetKm / parentDyKm) + 1));
+      iParentStart.push(clamp(
+        Math.round(xFraction * (parentEw - 1)) + 1,
+        1,
+        Math.max(1, parentEw - Math.round((ew - 1) / ratio))
+      ));
+      jParentStart.push(clamp(
+        Math.round(yFraction * (parentEs - 1)) + 1,
+        1,
+        Math.max(1, parentEs - Math.round((es - 1) / ratio))
+      ));
     }
   }
 
   const ref = boundsList[0].getCenter();
-  const geogDataRes = Array(maxDom).fill("'default'").join(', ');
+  const repeat = (value) => Array(maxDom).fill(value).join(', ');
+  const dates = repeat("'2000-01-01_00:00:00'");
+  const endDates = repeat("'2000-01-02_00:00:00'");
+  const geogDataRes = repeat("'default'");
 
   return `&share
  wrf_core = 'ARW',
  max_dom = ${maxDom},
- start_date = ${Array(maxDom).fill("'2000-01-01_00:00:00'").join(', ')},
- end_date   = ${Array(maxDom).fill("'2000-01-02_00:00:00'").join(', ')},
+ start_date = ${dates},
+ end_date   = ${endDates},
  interval_seconds = 21600,
  io_form_geogrid = 2,
  opt_output_from_geogrid_path = './',
@@ -58,7 +77,7 @@ function generateNamelist(boundsList) {
 /
 
 &geogrid
- parent_id         = ${Array(maxDom).fill(1).join(', ')},
+ parent_id         = ${parentId.join(', ')},
  parent_grid_ratio = ${parentGridRatio.join(', ')},
  i_parent_start    = ${iParentStart.join(', ')},
  j_parent_start    = ${jParentStart.join(', ')},
@@ -84,7 +103,12 @@ function generateNamelist(boundsList) {
 &metgrid
  fg_name = 'FILE',
  io_form_metgrid = 2,
-/\n`;
+/
+`;
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
 }
 
 function haversineKm(lat1, lon1, lat2, lon2) {
