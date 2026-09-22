@@ -306,8 +306,8 @@ function generateNamelistInput(){
   L.push(' end_year = '+v(domains.map(()=>te.end.y))+','); L.push(' end_month = '+v(domains.map(()=>te.end.m))+',');
   L.push(' end_day = '+v(domains.map(()=>te.end.d))+','); L.push(' end_hour = '+v(domains.map(()=>te.end.h))+',');
   L.push(' end_minute = '+v(domains.map(()=>te.end.mi))+','); L.push(' end_second = '+v(domains.map(()=>te.end.s))+',');
-  L.push(' interval_seconds = '+w.intervalSeconds+','); L.push(' input_from_file = '+v(domains.map(()=>'.true.'))+',');
-  L.push(' history_interval = '+niNum('niHistoryInterval',60)+','); L.push(' frames_per_outfile = '+niNum('niFramesPerOutfile',1)+',');
+  L.push(' interval_seconds = '+w.intervalSeconds+','); L.push(' input_from_file = '+v(domains.map((_,i)=>perDomainValue('input_from_file',i,".true."))),');
+  L.push(' history_interval = '+v(domains.map((_,i)=>perDomainValue('history_interval',i,60))),'); L.push(' frames_per_outfile = '+v(domains.map((_,i)=>perDomainValue('frames_per_outfile',i,1))),');
   L.push(' restart = '+niBool('niRestart')+','); L.push(' restart_interval = '+niNum('niRestartInterval',7200)+',');
   L.push(' io_form_history = '+niEl('niIoHistory').value+','); L.push(' io_form_restart = '+niEl('niIoRestart').value+',');
   L.push(' io_form_input = 2,'); L.push(' io_form_boundary = 2,'); L.push('/','');
@@ -335,17 +335,17 @@ function generateNamelistInput(){
   L.push(' sf_surface_physics = '+v(d.map(x=>x.lsm))+',');
   L.push(' sf_urban_physics = '+v(d.map(x=>x.urban))+',');
   L.push(' shcu_physics = '+v(d.map(x=>x.shcu))+',');
-  L.push(' radt = '+v(domains.map(()=>niNum('niRadt',5)))+',');
-  L.push(' bldt = '+v(domains.map(()=>niNum('niBldt',0)))+',');
-  L.push(' cudt = '+v(domains.map(()=>niNum('niCudt',0)))+',');
+  L.push(' radt = '+v(domains.map((_,i)=>perDomainValue('radt',i,5))),');
+  L.push(' bldt = '+v(domains.map((_,i)=>perDomainValue('bldt',i,0))),');
+  L.push(' cudt = '+v(domains.map((_,i)=>perDomainValue('cudt',i,0))),');
   L.push(' kfeta_trigger = '+ad.kfeta+','); L.push(' ishallow = '+ad.ishallow+',');
   L.push(' cugd_avedx = '+ad.cugd+','); L.push(' nsas_dx_factor = '+ad.nsas+',');
   L.push(' convtrans_avglen_m = '+ad.convtrans+',');
-  L.push(' cu_diag = '+v(domains.map(()=>ad.cudiag))+',');
-  L.push(' cu_rad_feedback = '+v(domains.map(()=>ad.curad))+',');
+  L.push(' cu_diag = '+v(domains.map((_,i)=>perDomainValue('cu_diag',i,0))),');
+  L.push(' cu_rad_feedback = '+v(domains.map((_,i)=>perDomainValue('cu_rad_feedback',i,".false."))),');
   L.push(' bmj_rad_feedback = '+ad.bmjrad+',');
-  L.push(' kf_edrates = '+v(domains.map(()=>ad.kfeds))+',');
-  L.push(' shallowcu_forced_ra = '+v(domains.map(()=>ad.forcedra))+',');
+  L.push(' kf_edrates = '+v(domains.map((_,i)=>perDomainValue('kf_edrates',i,0))),');
+  L.push(' shallowcu_forced_ra = '+v(domains.map((_,i)=>perDomainValue('shallowcu_forced_ra',i,".false."))),');
   L.push(' maxiens = '+ad.maxiens+','); L.push(' maxens = '+ad.maxens+',');
   L.push(' maxens2 = '+ad.maxens2+','); L.push(' maxens3 = '+ad.maxens3+','); L.push(' ensdim = '+ad.ensdim+',');
   L.push(' num_soil_layers = '+niNum('niSoilLayers',4)+','); L.push(' num_land_cat = '+niNum('niLandCat',21)+',');
@@ -353,13 +353,13 @@ function generateNamelistInput(){
   L.push(' sst_update = '+niBool('niSstUpdate')+','); L.push('/','');
 
   L.push('&dynamics');
-  L.push(' hybrid_opt = '+niEl('niHybridOpt').value+','); L.push(' non_hydrostatic = '+niBool('niNonHydro')+',');
-  L.push(' w_damping = '+niEl('niWDamping').value+','); L.push(' diff_opt = '+niEl('niDiffOpt').value+',');
-  L.push(' km_opt = '+niEl('niKmOpt').value+','); L.push(' damp_opt = '+niEl('niDampOpt').value+',');
-  L.push(' zdamp = '+niNum('niZdamp',5000)+','); L.push(' dampcoef = '+niNum('niDampcoef',0.2)+',');
-  L.push(' moist_adv_opt = '+niNum('niMoistAdv',1)+','); L.push(' scalar_adv_opt = '+niNum('niScalarAdv',1)+',');
-  L.push(' gwd_opt = '+niEl('niGwdOpt').value+','); L.push(' use_theta_m = '+niEl('niThetaM').value+',');
-  L.push(' khdif = '+niNum('niKhdif',0)+','); L.push(' kvdif = '+niNum('niKvdif',0)+','); L.push('/','');
+  L.push(' hybrid_opt = '+niEl('niHybridOpt').value+','); L.push(' non_hydrostatic = '+v(domains.map((_,i)=>perDomainValue('non_hydrostatic',i,".true."))),');
+  L.push(' w_damping = '+niEl('niWDamping').value+','); L.push(' diff_opt = '+v(domains.map((_,i)=>perDomainValue('diff_opt',i,-1))),');
+  L.push(' km_opt = '+v(domains.map((_,i)=>perDomainValue('km_opt',i,-1))),'); L.push(' damp_opt = '+niEl('niDampOpt').value+',');
+  L.push(' zdamp = '+v(domains.map((_,i)=>perDomainValue('zdamp',i,5000))),'); L.push(' dampcoef = '+v(domains.map((_,i)=>perDomainValue('dampcoef',i,0.2))),');
+  L.push(' moist_adv_opt = '+v(domains.map((_,i)=>perDomainValue('moist_adv_opt',i,1))),'); L.push(' scalar_adv_opt = '+v(domains.map((_,i)=>perDomainValue('scalar_adv_opt',i,1))),');
+  L.push(' gwd_opt = '+v(domains.map((_,i)=>perDomainValue('gwd_opt',i,0))),'); L.push(' use_theta_m = '+niEl('niThetaM').value+',');
+  L.push(' khdif = '+v(domains.map((_,i)=>perDomainValue('khdif',i,0))),'); L.push(' kvdif = '+v(domains.map((_,i)=>perDomainValue('kvdif',i,0))),'); L.push('/','');
 
   L.push('&bdy_control');
   L.push(' spec_bdy_width = '+niNum('niSpecBdyWidth',5)+','); L.push(' spec_zone = '+niNum('niSpecZone',1)+',');
