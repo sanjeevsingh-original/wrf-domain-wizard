@@ -9,6 +9,170 @@ function niOptions(items, value){
   return items.map(x => '<option value="'+x[0]+'"'+(x[0]===String(value)?' selected':'')+'>'+x[1]+'</option>').join('');
 }
 
+const perDomainFields = [
+  {section:'Time control',key:'history_interval',label:'history_interval (min)',type:'number',def:60},
+  {section:'Time control',key:'history_begin',label:'history_begin (min)',type:'number',def:0},
+  {section:'Time control',key:'frames_per_outfile',label:'frames_per_outfile',type:'number',def:1},
+  {section:'Time control',key:'input_from_file',label:'input_from_file',type:'bool',def:'.true.'},
+  {section:'Time control',key:'fine_input_stream',label:'fine_input_stream',type:'number',def:0},
+  {section:'Time control',key:'auxinput4_interval',label:'auxinput4_interval (min)',type:'number',def:360},
+  {section:'Time control',key:'auxhist9_interval',label:'auxhist9_interval (min)',type:'number',def:10},
+  {section:'Time control',key:'frames_per_auxhist9',label:'frames_per_auxhist9',type:'number',def:1000},
+  {section:'Time control',key:'auxinput11_interval',label:'auxinput11_interval (min)',type:'number',def:10},
+  {section:'Time control',key:'auxinput11_end_h',label:'auxinput11_end_h',type:'number',def:6},
+  {section:'Physics',key:'radt',label:'radt (min)',type:'number',def:5},
+  {section:'Physics',key:'bldt',label:'bldt (min)',type:'number',def:0},
+  {section:'Physics',key:'cudt',label:'cudt (min)',type:'number',def:0},
+  {section:'Physics',key:'mfshconv',label:'mfshconv',type:'number',def:1},
+  {section:'Physics',key:'bl_mynn_tkebudget',label:'bl_mynn_tkebudget',type:'number',def:0},
+  {section:'Physics',key:'bl_mynn_tkeadvect',label:'bl_mynn_tkeadvect',type:'bool',def:'.false.'},
+  {section:'Physics',key:'bl_mynn_cloudmix',label:'bl_mynn_cloudmix',type:'number',def:1},
+  {section:'Physics',key:'bl_mynn_edmf',label:'bl_mynn_edmf',type:'number',def:1},
+  {section:'Physics',key:'bl_mynn_edmf_mom',label:'bl_mynn_edmf_mom',type:'number',def:1},
+  {section:'Physics',key:'bl_mynn_edmf_tke',label:'bl_mynn_edmf_tke',type:'number',def:0},
+  {section:'Physics',key:'scalar_pblmix',label:'scalar_pblmix',type:'number',def:0},
+  {section:'Physics',key:'tracer_pblmix',label:'tracer_pblmix',type:'number',def:1},
+  {section:'Physics',key:'shinhong_tke_diag',label:'shinhong_tke_diag',type:'number',def:1},
+  {section:'Physics',key:'acc_phy_tend',label:'acc_phy_tend',type:'number',def:0},
+  {section:'Physics',key:'progn',label:'progn',type:'number',def:0},
+  {section:'Physics',key:'shallowcu_forced_ra',label:'shallowcu_forced_ra',type:'bool',def:'.false.'},
+  {section:'Physics',key:'kf_edrates',label:'kf_edrates',type:'number',def:0},
+  {section:'Physics',key:'cu_diag',label:'cu_diag',type:'number',def:0},
+  {section:'Physics',key:'cu_rad_feedback',label:'cu_rad_feedback',type:'bool',def:'.false.'},
+  {section:'Physics',key:'wif_fire_inj',label:'wif_fire_inj',type:'number',def:1},
+  {section:'Physics',key:'slope_rad',label:'slope_rad',type:'number',def:0},
+  {section:'Physics',key:'topo_shading',label:'topo_shading',type:'number',def:0},
+  {section:'Physics',key:'aer_aod550_opt',label:'aer_aod550_opt',type:'number',def:1},
+  {section:'Physics',key:'aer_aod550_val',label:'aer_aod550_val',type:'number',def:0.12},
+  {section:'Physics',key:'aer_angexp_opt',label:'aer_angexp_opt',type:'number',def:1},
+  {section:'Physics',key:'aer_angexp_val',label:'aer_angexp_val',type:'number',def:1.3},
+  {section:'Physics',key:'aer_ssa_opt',label:'aer_ssa_opt',type:'number',def:1},
+  {section:'Physics',key:'aer_ssa_val',label:'aer_ssa_val',type:'number',def:0.85},
+  {section:'Physics',key:'aer_asy_opt',label:'aer_asy_opt',type:'number',def:1},
+  {section:'Physics',key:'aer_asy_val',label:'aer_asy_val',type:'number',def:0.90},
+  {section:'Physics',key:'aer_type',label:'aer_type',type:'number',def:1},
+  {section:'Physics',key:'sf_lake_physics',label:'sf_lake_physics',type:'number',def:0},
+  {section:'Physics',key:'lakedepth_default',label:'lakedepth_default (m)',type:'number',def:50},
+  {section:'Physics',key:'lake_min_elev',label:'lake_min_elev',type:'number',def:5},
+  {section:'Physics',key:'use_lakedepth',label:'use_lakedepth',type:'number',def:1},
+  {section:'Physics',key:'lightning_option',label:'lightning_option',type:'number',def:0},
+  {section:'Physics',key:'lightning_dt',label:'lightning_dt (s)',type:'number',def:0},
+  {section:'Physics',key:'lightning_start_seconds',label:'lightning_start_seconds',type:'number',def:0},
+  {section:'Physics',key:'flashrate_factor',label:'flashrate_factor',type:'number',def:1},
+  {section:'Physics',key:'cellcount_method',label:'cellcount_method',type:'number',def:0},
+  {section:'Physics',key:'hailcast_opt',label:'hailcast_opt',type:'number',def:0},
+  {section:'Physics',key:'haildt',label:'haildt (s)',type:'number',def:0},
+  {section:'Physics',key:'sf_surf_irr_scheme',label:'sf_surf_irr_scheme',type:'number',def:0},
+  {section:'Physics',key:'irr_daily_amount',label:'irr_daily_amount (mm/day)',type:'number',def:0},
+  {section:'Dynamics',key:'diff_opt',label:'diff_opt',type:'number',def:-1},
+  {section:'Dynamics',key:'km_opt',label:'km_opt',type:'number',def:-1},
+  {section:'Dynamics',key:'diff_6th_opt',label:'diff_6th_opt',type:'number',def:0},
+  {section:'Dynamics',key:'diff_6th_factor',label:'diff_6th_factor',type:'number',def:0.12},
+  {section:'Dynamics',key:'diff_6th_slopeopt',label:'diff_6th_slopeopt',type:'number',def:0},
+  {section:'Dynamics',key:'diff_6th_thresh',label:'diff_6th_thresh',type:'number',def:0.1},
+  {section:'Dynamics',key:'c_s',label:'c_s',type:'number',def:0.25},
+  {section:'Dynamics',key:'c_k',label:'c_k',type:'number',def:0.15},
+  {section:'Dynamics',key:'zdamp',label:'zdamp (m)',type:'number',def:5000},
+  {section:'Dynamics',key:'dampcoef',label:'dampcoef',type:'number',def:0.2},
+  {section:'Dynamics',key:'khdif',label:'khdif (m²/s)',type:'number',def:0},
+  {section:'Dynamics',key:'kvdif',label:'kvdif (m²/s)',type:'number',def:0},
+  {section:'Dynamics',key:'smdiv',label:'smdiv',type:'number',def:0.1},
+  {section:'Dynamics',key:'emdiv',label:'emdiv',type:'number',def:0.01},
+  {section:'Dynamics',key:'epssm',label:'epssm',type:'number',def:0.1},
+  {section:'Dynamics',key:'non_hydrostatic',label:'non_hydrostatic',type:'bool',def:'.true.'},
+  {section:'Dynamics',key:'mix_full_fields',label:'mix_full_fields',type:'bool',def:'.false.'},
+  {section:'Dynamics',key:'mix_isotropic',label:'mix_isotropic',type:'number',def:0},
+  {section:'Dynamics',key:'mix_upper_bound',label:'mix_upper_bound',type:'number',def:0.1},
+  {section:'Dynamics',key:'h_mom_adv_order',label:'h_mom_adv_order',type:'number',def:5},
+  {section:'Dynamics',key:'v_mom_adv_order',label:'v_mom_adv_order',type:'number',def:3},
+  {section:'Dynamics',key:'h_sca_adv_order',label:'h_sca_adv_order',type:'number',def:5},
+  {section:'Dynamics',key:'v_sca_adv_order',label:'v_sca_adv_order',type:'number',def:3},
+  {section:'Dynamics',key:'time_step_sound',label:'time_step_sound',type:'number',def:0},
+  {section:'Dynamics',key:'moist_adv_opt',label:'moist_adv_opt',type:'number',def:1},
+  {section:'Dynamics',key:'scalar_adv_opt',label:'scalar_adv_opt',type:'number',def:1},
+  {section:'Dynamics',key:'tke_adv_opt',label:'tke_adv_opt',type:'number',def:1},
+  {section:'Dynamics',key:'phi_adv_z',label:'phi_adv_z',type:'number',def:1},
+  {section:'Dynamics',key:'chem_adv_opt',label:'chem_adv_opt',type:'number',def:1},
+  {section:'Dynamics',key:'tracer_adv_opt',label:'tracer_adv_opt',type:'number',def:1},
+  {section:'Dynamics',key:'momentum_adv_opt',label:'momentum_adv_opt',type:'number',def:1},
+  {section:'Dynamics',key:'gwd_opt',label:'gwd_opt',type:'number',def:0},
+  {section:'Dynamics',key:'do_avgflx_em',label:'do_avgflx_em',type:'number',def:0},
+  {section:'Dynamics',key:'do_avgflx_cugd',label:'do_avgflx_cugd',type:'number',def:0},
+  {section:'Dynamics',key:'sfs_opt',label:'sfs_opt',type:'number',def:0},
+  {section:'Dynamics',key:'m_opt',label:'m_opt',type:'number',def:0},
+  {section:'Dynamics',key:'tracer_opt',label:'tracer_opt',type:'number',def:0},
+  {section:'Boundary',key:'specified',label:'specified',type:'bool',def:'.false.'},
+  {section:'Boundary',key:'nested',label:'nested',type:'bool',def:'.false.'},
+  {section:'Boundary',key:'periodic_x',label:'periodic_x',type:'bool',def:'.false.'},
+  {section:'Boundary',key:'symmetric_xs',label:'symmetric_xs',type:'bool',def:'.false.'},
+  {section:'Boundary',key:'symmetric_xe',label:'symmetric_xe',type:'bool',def:'.false.'},
+  {section:'Boundary',key:'open_xs',label:'open_xs',type:'bool',def:'.false.'},
+  {section:'Boundary',key:'open_xe',label:'open_xe',type:'bool',def:'.false.'},
+  {section:'Boundary',key:'periodic_y',label:'periodic_y',type:'bool',def:'.false.'},
+  {section:'Boundary',key:'symmetric_ys',label:'symmetric_ys',type:'bool',def:'.false.'},
+  {section:'Boundary',key:'symmetric_ye',label:'symmetric_ye',type:'bool',def:'.false.'},
+  {section:'Boundary',key:'open_ys',label:'open_ys',type:'bool',def:'.false.'},
+  {section:'Boundary',key:'open_ye',label:'open_ye',type:'bool',def:'.false.'},
+  {section:'Boundary',key:'have_bcs_moist',label:'have_bcs_moist',type:'bool',def:'.false.'},
+  {section:'Boundary',key:'have_bcs_scalar',label:'have_bcs_scalar',type:'bool',def:'.false.'},
+  {section:'FDDA',key:'grid_fdda',label:'grid_fdda',type:'number',def:0},
+  {section:'FDDA',key:'gfdda_interval_m',label:'gfdda_interval_m',type:'number',def:0},
+  {section:'FDDA',key:'gfdda_end_h',label:'gfdda_end_h',type:'number',def:0},
+  {section:'FDDA',key:'fgdt',label:'fgdt',type:'number',def:0},
+  {section:'FDDA',key:'if_no_pbl_nudging_uv',label:'if_no_pbl_nudging_uv',type:'number',def:0},
+  {section:'FDDA',key:'if_no_pbl_nudging_t',label:'if_no_pbl_nudging_t',type:'number',def:0},
+  {section:'FDDA',key:'if_no_pbl_nudging_q',label:'if_no_pbl_nudging_q',type:'number',def:0},
+  {section:'FDDA',key:'guv',label:'guv',type:'number',def:0},
+  {section:'FDDA',key:'gt',label:'gt',type:'number',def:0},
+  {section:'FDDA',key:'gq',label:'gq',type:'number',def:0},
+  {section:'FDDA',key:'grid_sfdda',label:'grid_sfdda',type:'number',def:0},
+  {section:'FDDA',key:'sgfdda_interval_m',label:'sgfdda_interval_m',type:'number',def:0},
+  {section:'FDDA',key:'sgfdda_end_h',label:'sgfdda_end_h',type:'number',def:0},
+  {section:'FDDA',key:'guv_sfc',label:'guv_sfc',type:'number',def:0},
+  {section:'FDDA',key:'gt_sfc',label:'gt_sfc',type:'number',def:0},
+  {section:'FDDA',key:'gq_sfc',label:'gq_sfc',type:'number',def:0},
+  {section:'FDDA',key:'rinblw',label:'rinblw',type:'number',def:0},
+  {section:'FDDA',key:'obs_nudge_opt',label:'obs_nudge_opt',type:'number',def:0},
+  {section:'FDDA',key:'fdda_start',label:'fdda_start (min)',type:'number',def:0},
+  {section:'FDDA',key:'fdda_end',label:'fdda_end (min)',type:'number',def:0},
+  {section:'FDDA',key:'obs_nudge_wind',label:'obs_nudge_wind',type:'number',def:0},
+  {section:'FDDA',key:'obs_coef_wind',label:'obs_coef_wind',type:'number',def:0},
+  {section:'FDDA',key:'obs_nudge_temp',label:'obs_nudge_temp',type:'number',def:0},
+  {section:'FDDA',key:'obs_coef_temp',label:'obs_coef_temp',type:'number',def:0},
+  {section:'FDDA',key:'obs_nudge_mois',label:'obs_nudge_mois',type:'number',def:0},
+  {section:'FDDA',key:'obs_coef_mois',label:'obs_coef_mois',type:'number',def:0},
+  {section:'FDDA',key:'obs_rinxy',label:'obs_rinxy (km)',type:'number',def:0},
+  {section:'FDDA',key:'obs_twindo',label:'obs_twindo (h)',type:'number',def:0},
+  {section:'FDDA',key:'obs_ionf',label:'obs_ionf',type:'number',def:1},
+  {section:'FDDA',key:'obs_prt_freq',label:'obs_prt_freq',type:'number',def:1000},
+  {section:'FDDA',key:'obs_no_pbl_nudge_uv',label:'obs_no_pbl_nudge_uv',type:'number',def:0},
+  {section:'FDDA',key:'obs_no_pbl_nudge_t',label:'obs_no_pbl_nudge_t',type:'number',def:0},
+  {section:'FDDA',key:'obs_no_pbl_nudge_q',label:'obs_no_pbl_nudge_q',type:'number',def:0}
+];
+
+function perDomainValue(key,i,def){
+  const el=niEl('nid_'+key+'_'+i);
+  return el ? (el.type==='checkbox' ? (el.checked?'.true.':'.false.') : el.value) : String(def);
+}
+function niInputForField(f,i){
+  const id='nid_'+f.key+'_'+i;
+  if(f.type==='bool'){
+    return '<select id="'+id+'" class="form-select form-select-sm"><option value=".false."'+(f.def==='.false.'?' selected':'')+'>false</option><option value=".true."'+(f.def==='.true.'?' selected':'')+'>true</option></select>';
+  }
+  return '<input id="'+id+'" class="form-control form-control-sm" type="number" step="any" value="'+f.def+'">';
+}
+function buildPerDomainNamelistPanel(){
+  const n=Number(niEl('domainCount').value), root=niEl('perDomainNamelistTable');
+  if(!root)return;
+  const sections=[...new Set(perDomainFields.map(x=>x.section))];
+  root.innerHTML=Array.from({length:n},(_,i)=>{
+    return '<details class="border rounded p-2 mb-2"'+(i===0?' open':'')+'><summary class="fw-semibold small">Domain d'+pad(i)+'</summary>'+
+      sections.map(sec=>'<div class="mt-2"><div class="small fw-semibold text-secondary mb-1">'+sec+'</div><div class="row g-2">'+
+        perDomainFields.filter(f=>f.section===sec).map(f=>'<div class="col-6 col-lg-4"><label class="form-label small">'+f.label+'</label>'+niInputForField(f,i)+'</div>').join('')+
+      '</div></div>').join('')+'</details>';
+  }).join('');
+}
+
 function buildNamelistInputTable(){
   const n = Number(niEl('domainCount').value);
   while(namelistInputValues.length < n) namelistInputValues.push({...niDefaults});
@@ -219,9 +383,10 @@ function downloadNamelistInput(){
   }catch(e){ showError(e.message); }
 }
 
-niEl('domainCount').addEventListener('change',buildNamelistInputTable);
+niEl('domainCount').addEventListener('change',()=>{buildNamelistInputTable();buildPerDomainNamelistPanel();});
 niEl('exportInputBtn').addEventListener('click',downloadNamelistInput);
 ['niBmjRadFeedback','niKfetaTrigger','niIshallow','niCugdAvedx','niNsasDxFactor','niConvtransAvglen','niCuDiag','niCuRadFeedback','niKfEdrates','niShallowForcedRa','niMaxiens','niMaxens','niMaxens2','niMaxens3','niEnsdim'].forEach(id=>{
   niEl(id)?.addEventListener('change',updatePhysicsCompatibility);
 });
 buildNamelistInputTable();
+buildPerDomainNamelistPanel();
