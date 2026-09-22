@@ -29,6 +29,27 @@
 <select id="physicsSuiteInput" class="form-select form-select-sm mb-2"><option value="tropical" selected>Tropical</option><option value="CONUS">CONUS</option><option value="none">Manual / no suite</option></select>
 <div class="form-text mb-2">Per-domain physics options can override the suite. Scheme IDs vary by WRF version; verify compatibility with your installed WRF.</div>
 <div id="namelistInputTable"></div>
+<div id="physicsAdvancedPanel" class="border rounded p-2 mt-2">
+<div class="small fw-semibold mb-2">Cumulus / shallow-convection advanced controls</div>
+<div id="physicsCompatibility" class="small mb-2"></div>
+<div class="row g-2">
+<div class="col-6"><label class="form-label small">kfeta_trigger</label><select id="niKfetaTrigger" class="form-select form-select-sm"><option value="1">1 — original</option><option value="2">2 — moisture-advection trigger</option><option value="3">3 — RH-dependent perturbation</option></select></div>
+<div class="col-6"><label class="form-label small">ishallow</label><select id="niIshallow" class="form-select form-select-sm"><option value="0">0 — off</option><option value="1">1 — on</option></select></div>
+<div class="col-6"><label class="form-label small">cugd_avedx</label><select id="niCugdAvedx" class="form-select form-select-sm"><option value="1">1 — distance dependent</option><option value="3">3 — small-grid option</option></select></div>
+<div class="col-6"><label class="form-label small">nsas_dx_factor</label><select id="niNsasDxFactor" class="form-select form-select-sm"><option value="0">0 — off</option><option value="1">1 — on</option></select></div>
+<div class="col-6"><label class="form-label small">convtrans_avglen_m</label><input id="niConvtransAvglen" class="form-control form-control-sm" type="number" min="0" value="30"></div>
+<div class="col-6"><label class="form-label small">cu_diag</label><select id="niCuDiag" class="form-select form-select-sm"><option value="0">0 — off</option><option value="1">1 — on</option></select></div>
+<div class="col-6"><label class="form-label small">cu_rad_feedback</label><select id="niCuRadFeedback" class="form-select form-select-sm"><option value=".false.">false</option><option value=".true.">true</option></select></div>
+<div class="col-6"><label class="form-label small">kf_edrates</label><select id="niKfEdrates" class="form-select form-select-sm"><option value="0">0 — off</option><option value="1">1 — output rates</option></select></div>
+<div class="col-6"><label class="form-label small">shallowcu_forced_ra</label><select id="niShallowForcedRa" class="form-select form-select-sm"><option value=".false.">false</option><option value=".true.">true</option></select></div>
+<div class="col-6"><label class="form-label small">maxiens</label><input id="niMaxiens" class="form-control form-control-sm" type="number" min="1" value="1"></div>
+<div class="col-6"><label class="form-label small">maxens</label><input id="niMaxens" class="form-control form-control-sm" type="number" min="1" value="3"></div>
+<div class="col-6"><label class="form-label small">maxens2</label><input id="niMaxens2" class="form-control form-control-sm" type="number" min="1" value="3"></div>
+<div class="col-6"><label class="form-label small">maxens3</label><input id="niMaxens3" class="form-control form-control-sm" type="number" min="1" value="16"></div>
+<div class="col-6"><label class="form-label small">ensdim</label><input id="niEnsdim" class="form-control form-control-sm" type="number" min="1" value="144"></div>
+</div>
+<div class="small text-muted mt-2">These controls are written to <code>&physics</code>. Compatibility warnings are based on the selected cumulus/PBL schemes and current WRF documentation; final verification should use the WRF version installed on your system.</div>
+</div>
 <div class="row g-2 mt-1">
 <div class="col-4"><label class="form-label small">radt (min)</label><input id="niRadt" class="form-control form-control-sm" type="number" min="1" value="5"></div>
 <div class="col-4"><label class="form-label small">bldt (s)</label><input id="niBldt" class="form-control form-control-sm" type="number" min="0" value="0"></div>
