@@ -101,7 +101,7 @@ function updatePhysicsCompatibility(){
   if(Number(niEl('niKfEdrates')?.value)===1&&!cu.some(x=>[1,11,99].includes(x))) notes.push('kf_edrates=1 is documented for KF-based schemes 1, 11, and 99.');
   box.innerHTML=notes.length?'<div class="alert alert-warning py-2 mb-0">'+notes.map(x=>'• '+x).join('<br>')+'</div>':'<div class="alert alert-success py-2 mb-0">No obvious cumulus/PBL compatibility conflicts detected from the selected options.</div>';
 }
-\nfunction durationParts(start,end){
+function durationParts(start,end){
   const a=new Date(start.replace('_','T')+'Z'),b=new Date(end.replace('_','T')+'Z');
   if(!Number.isFinite(a.getTime())||!Number.isFinite(b.getTime())||b<=a)throw new Error('Invalid WRF start/end time.');
   let s=Math.round((b-a)/1000),days=Math.floor(s/86400);s-=days*86400;
