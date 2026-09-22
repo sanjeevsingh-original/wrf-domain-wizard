@@ -382,6 +382,10 @@ function generateNamelistInput(){
 
 function downloadNamelistInput(){
   try{
+    if(typeof window.validateNamelistSelections==='function'){
+      const report=window.validateNamelistSelections();
+      if(!report.valid) throw new Error('Namelist validation failed. Fix the reported errors before downloading namelist.input.');
+    }
     const x=generateNamelistInput();
     const b=new Blob([x],{type:'text/plain;charset=utf-8'});
     const u=URL.createObjectURL(b), a=document.createElement('a');
