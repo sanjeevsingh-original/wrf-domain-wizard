@@ -1,6 +1,7 @@
 // WRF namelist.input generator — real-data / WRF-ARW starter configuration
 const namelistInputValues=[];
-const niDefaults={mp:'6',cu:'16',lw:'4',sw:'4',pbl:'1',sfclay:'91',lsm:'2',urban:'0'};
+const niDefaults={mp:'6',cu:'16',lw:'4',sw:'4',pbl:'1',sfclay:'91',lsm:'2',urban:'0',shcu:'0'};
+const niAdvancedDefaults={kfeta:'1',ishallow:'0',cugd:'1',nsas:'0',convtrans:'30',cudiag:'0',curad:'.false.',kfeds:'0',forcedra:'.false.',maxiens:'1',maxens:'3',maxens2:'3',maxens3:'16',ensdim:'144'};
 
 function niOptions(a,v){
   return a.map(x=>'<option value="'+x[0]+'"'+(x[0]===String(v)?' selected':'')+'>'+x[1]+'</option>').join('');
@@ -60,6 +61,7 @@ function buildNamelistInputTable(){
   const urban=[
     ['0','0 — off'],['1','1 — SLUCM'],['2','2 — BEP'],['3','3 — BEM']
   ];
+  const shcu=[['0','0 — off'],['2','2 — UW / Park-Bretherton'],['3','3 — GRIMS'],['4','4 — NSAS shallow'],['5','5 — Deng']];
 
   t.innerHTML='<div class="alert alert-info py-2 small mb-2"><strong>Per-domain physics:</strong> cu_physics, mp_physics, radiation, PBL, surface layer, LSM and urban physics are configured here for every domain. These values are written directly to the <code>&physics</code> section.</div>'+
     Array.from({length:n},(_,i)=>{
@@ -72,16 +74,34 @@ function buildNamelistInputTable(){
       '<div class="col-6"><label class="form-label small">bl_pbl_physics</label><select class="form-select form-select-sm ni-field" data-d="'+i+'" data-k="pbl">'+niOptions(pbl,v.pbl)+'</select></div>'+
       '<div class="col-6"><label class="form-label small">sf_sfclay_physics</label><select class="form-select form-select-sm ni-field" data-d="'+i+'" data-k="sfclay">'+niOptions(sf,v.sfclay)+'</select></div>'+
       '<div class="col-6"><label class="form-label small">sf_surface_physics</label><select class="form-select form-select-sm ni-field" data-d="'+i+'" data-k="lsm">'+niOptions(lsm,v.lsm)+'</select></div>'+
-      '<div class="col-6"><label class="form-label small">sf_urban_physics</label><select class="form-select form-select-sm ni-field" data-d="'+i+'" data-k="urban">'+niOptions(urban,v.urban)+'</select></div>'+
+      '<div class="col-6"><label class="form-label small">sf_urban_physics</label><select class="form-select form-select-sm ni-field" data-d="'+i+'" data-k="urban">'+niOptions(urban,v.urban)+'</select></div>'+\
+      '<div class="col-6"><label class="form-label small">shcu_physics</label><select class="form-select form-select-sm ni-field" data-d="'+i+'" data-k="shcu">'+niOptions(shcu,v.shcu)+'</select></div>'+
       '</div></div>';
     }).join('');
 
   document.querySelectorAll('.ni-field').forEach(x=>x.addEventListener('change',()=>{
     namelistInputValues[Number(x.dataset.d)][x.dataset.k]=x.value;
+    updatePhysicsCompatibility();
   }));
+  updatePhysicsCompatibility();
 }
 
-function durationParts(start,end){
+function updatePhysicsCompatibility(){
+  const box=niEl('physicsCompatibility');
+  if(!box)return;
+  const notes=[],cu=namelistInputValues.map(x=>Number(x.cu)),pbl=namelistInputValues.map(x=>Number(x.pbl)),sh=namelistInputValues.map(x=>Number(x.shcu));
+  if(cu.some(x=>x===1)&&Number(niEl('niKfetaTrigger')?.value)!==1) notes.push('kfeta_trigger is only used with cu_physics=1 (Kain-Fritsch).');
+  if(Number(niEl('niIshallow')?.value)===1&&!cu.some(x=>x===3||x===5)) notes.push('ishallow=1 requires cu_physics=3 (Grell-Freitas) or 5 (Grell-3D).');
+  if(sh.some(x=>x===5)&&pbl.some(x=>![2,4,5,6].includes(x))) notes.push('shcu_physics=5 (Deng) is documented only with MYJ/MYNN-family PBL options; verify the exact PBL code/version.');
+  if(sh.some(x=>x===4)&&!cu.some(x=>x===14)) notes.push('shcu_physics=4 is intended for the KSAS / cu_physics=14 combination.');
+  if(Number(niEl('niCugdAvedx')?.value)===3&&!cu.some(x=>x===5)) notes.push('cugd_avedx=3 is documented for cu_physics=5.');
+  if(Number(niEl('niNsasDxFactor')?.value)===1&&!cu.some(x=>[14,96].includes(x))) notes.push('nsas_dx_factor is an NSAS-related option; verify compatibility with your selected SAS scheme.');
+  if(Number(niEl('niCuDiag')?.value)===1&&!cu.some(x=>[3,5,93].includes(x))) notes.push('cu_diag=1 is documented for cu_physics=3, 5, or 93.');
+  if(niEl('niCuRadFeedback')?.value==='.true.'&&!cu.some(x=>[1,3,5,10,11,93,99].includes(x))) notes.push('cu_rad_feedback=.true. is documented for cu_physics=1, 3, 5, 10, 11, 93, or 99.');
+  if(Number(niEl('niKfEdrates')?.value)===1&&!cu.some(x=>[1,11,99].includes(x))) notes.push('kf_edrates=1 is documented for KF-based schemes 1, 11, and 99.');
+  box.innerHTML=notes.length?'<div class="alert alert-warning py-2 mb-0">'+notes.map(x=>'• '+x).join('<br>')+'</div>':'<div class="alert alert-success py-2 mb-0">No obvious cumulus/PBL compatibility conflicts detected from the selected options.</div>';
+}
+\nfunction durationParts(start,end){
   const a=new Date(start.replace('_','T')+'Z'),b=new Date(end.replace('_','T')+'Z');
   if(!Number.isFinite(a.getTime())||!Number.isFinite(b.getTime())||b<=a)throw new Error('Invalid WRF start/end time.');
   let s=Math.round((b-a)/1000),days=Math.floor(s/86400);s-=days*86400;
@@ -115,6 +135,7 @@ function generateNamelistInput(){
   const specified=domains.map((_,i)=>i===0?'.true.':'.false.').join(', ');
   const nested=domains.map((_,i)=>i===0?'.false.':'.true.').join(', ');
   const suite=niEl('physicsSuiteInput').value;
+  const ad={kfeta:niEl('niKfetaTrigger').value,ishallow:niEl('niIshallow').value,cugd:niEl('niCugdAvedx').value,nsas:niEl('niNsasDxFactor').value,convtrans:niNum('niConvtransAvglen',30),cudiag:niEl('niCuDiag').value,curad:niEl('niCuRadFeedback').value,kfeds:niEl('niKfEdrates').value,forcedra:niEl('niShallowForcedRa').value,maxiens:niNum('niMaxiens',1),maxens:niNum('niMaxens',3),maxens2:niNum('niMaxens2',3),maxens3:niNum('niMaxens3',16),ensdim:niNum('niEnsdim',144)};
   const physicsSuite=suite==='none'?'':" physics_suite = '"+suite+"',\n";
 
   return '&time_control\n'+
