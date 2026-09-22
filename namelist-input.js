@@ -254,7 +254,7 @@ function emitPerDomainFields(L,section,skip){
     L.push(' '+f.key+' = '+v(domains.map((_,i)=>perDomainValue(f.key,i,f.def)))+',');
   });
 }
-\nfunction durationParts(start,end){
+function durationParts(start,end){
   const a=new Date(start.replace('_','T')+'Z');
   const b=new Date(end.replace('_','T')+'Z');
   if(!Number.isFinite(a.getTime())||!Number.isFinite(b.getTime())||b<=a) throw new Error('Invalid WRF start/end time.');
