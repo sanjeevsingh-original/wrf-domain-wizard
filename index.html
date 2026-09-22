@@ -29,6 +29,11 @@
 <select id="physicsSuiteInput" class="form-select form-select-sm mb-2"><option value="tropical" selected>Tropical</option><option value="CONUS">CONUS</option><option value="none">Manual / no suite</option></select>
 <div class="form-text mb-2">Per-domain physics options can override the suite. Scheme IDs vary by WRF version; verify compatibility with your installed WRF.</div>
 <div id="namelistInputTable"></div>
+<div id="perDomainNamelistPanel" class="border rounded p-2 mt-2">
+<div class="small fw-semibold mb-2">Per-domain namelist.input controls</div>
+<div class="small text-muted mb-2">These controls are generated for every selected domain. WRF distinguishes <code>max_dom</code> variables from single-entry variables; only parameters documented as domain-specific are shown here. Geometry-derived values remain locked to the drawn domains.</div>
+<div id="perDomainNamelistTable"></div>
+</div>
 <div id="physicsAdvancedPanel" class="border rounded p-2 mt-2">
 <div class="small fw-semibold mb-2">Cumulus / shallow-convection advanced controls</div>
 <div id="physicsCompatibility" class="small mb-2"></div>
