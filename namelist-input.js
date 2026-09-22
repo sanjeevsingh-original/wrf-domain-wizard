@@ -248,7 +248,13 @@ function updatePhysicsCompatibility(){
     : '<div class="alert alert-success py-2 mb-0">No obvious cumulus/PBL compatibility conflicts detected from the selected options.</div>';
 }
 
-function durationParts(start,end){
+function emitPerDomainFields(L,section,skip){
+  const skipSet=new Set(skip||[]);
+  perDomainFields.filter(f=>f.section===section&&!skipSet.has(f.key)).forEach(f=>{
+    L.push(' '+f.key+' = '+v(domains.map((_,i)=>perDomainValue(f.key,i,f.def)))+',');
+  });
+}
+\nfunction durationParts(start,end){
   const a=new Date(start.replace('_','T')+'Z');
   const b=new Date(end.replace('_','T')+'Z');
   if(!Number.isFinite(a.getTime())||!Number.isFinite(b.getTime())||b<=a) throw new Error('Invalid WRF start/end time.');
@@ -311,7 +317,7 @@ function generateNamelistInput(){
   L.push(' frames_per_outfile = '+v(domains.map((_,i)=>perDomainValue('frames_per_outfile',i,1)))+',');
   L.push(' restart = '+niBool('niRestart')+','); L.push(' restart_interval = '+niNum('niRestartInterval',7200)+',');
   L.push(' io_form_history = '+niEl('niIoHistory').value+','); L.push(' io_form_restart = '+niEl('niIoRestart').value+',');
-  L.push(' io_form_input = 2,'); L.push(' io_form_boundary = 2,'); L.push('/','');
+  L.push(' io_form_input = 2,'); L.push(' io_form_boundary = 2,'); emitPerDomainFields(L,'Time control',['history_interval','frames_per_outfile','input_from_file']); L.push('/','');
 
   L.push('&domains');
   L.push(' time_step = '+niNum('niTimeStep',Math.max(1,Math.round(sp.dx/1000*6)))+',');
@@ -346,7 +352,7 @@ function generateNamelistInput(){
   L.push(' cu_rad_feedback = '+v(domains.map((_,i)=>perDomainValue('cu_rad_feedback',i,'.false.')))+',');
   L.push(' bmj_rad_feedback = '+ad.bmjrad+',');
   L.push(' kf_edrates = '+v(domains.map((_,i)=>perDomainValue('kf_edrates',i,0)))+',');
-  L.push(' shallowcu_forced_ra = '+v(domains.map((_,i)=>perDomainValue('shallowcu_forced_ra',i,'.false.')))+',');
+  L.push(' shallowcu_forced_ra = '+v(domains.map((_,i)=>perDomainValue('shallowcu_forced_ra',i,'.false.')))+','); emitPerDomainFields(L,'Physics',['radt','bldt','cudt','cu_diag','cu_rad_feedback','kf_edrates','shallowcu_forced_ra']);
   L.push(' maxiens = '+ad.maxiens+','); L.push(' maxens = '+ad.maxens+',');
   L.push(' maxens2 = '+ad.maxens2+','); L.push(' maxens3 = '+ad.maxens3+','); L.push(' ensdim = '+ad.ensdim+',');
   L.push(' num_soil_layers = '+niNum('niSoilLayers',4)+','); L.push(' num_land_cat = '+niNum('niLandCat',21)+',');
@@ -360,15 +366,15 @@ function generateNamelistInput(){
   L.push(' zdamp = '+v(domains.map((_,i)=>perDomainValue('zdamp',i,5000)))+','); L.push(' dampcoef = '+v(domains.map((_,i)=>perDomainValue('dampcoef',i,0.2)))+',');
   L.push(' moist_adv_opt = '+v(domains.map((_,i)=>perDomainValue('moist_adv_opt',i,1)))+','); L.push(' scalar_adv_opt = '+v(domains.map((_,i)=>perDomainValue('scalar_adv_opt',i,1)))+',');
   L.push(' gwd_opt = '+v(domains.map((_,i)=>perDomainValue('gwd_opt',i,0)))+','); L.push(' use_theta_m = '+niEl('niThetaM').value+',');
-  L.push(' khdif = '+v(domains.map((_,i)=>perDomainValue('khdif',i,0)))+','); L.push(' kvdif = '+v(domains.map((_,i)=>perDomainValue('kvdif',i,0)))+','); L.push('/','');
+  L.push(' khdif = '+v(domains.map((_,i)=>perDomainValue('khdif',i,0)))+','); L.push(' kvdif = '+v(domains.map((_,i)=>perDomainValue('kvdif',i,0)))+','); emitPerDomainFields(L,'Dynamics',['diff_opt','km_opt','zdamp','dampcoef','khdif','kvdif','moist_adv_opt','scalar_adv_opt','gwd_opt','non_hydrostatic']); L.push('/','');
 
   L.push('&bdy_control');
   L.push(' spec_bdy_width = '+niNum('niSpecBdyWidth',5)+','); L.push(' spec_zone = '+niNum('niSpecZone',1)+',');
-  L.push(' relax_zone = '+niNum('niRelaxZone',4)+','); L.push(' specified = '+specified+','); L.push(' nested = '+nested+','); L.push('/','');
+  L.push(' relax_zone = '+niNum('niRelaxZone',4)+','); L.push(' specified = '+specified+','); L.push(' nested = '+nested+','); emitPerDomainFields(L,'Boundary',['specified','nested']); L.push('/','');
 
   L.push('&fdda');
   L.push(' grid_fdda = '+v(domains.map(()=>niEl('niGridFdda').value))+',');
-  L.push(' obs_nudge_opt = '+v(domains.map(()=>niEl('niObsNudge').value))+','); L.push('/','');
+  L.push(' obs_nudge_opt = '+v(domains.map((_,i)=>perDomainValue('obs_nudge_opt',i,0)))+','); emitPerDomainFields(L,'FDDA',['grid_fdda','obs_nudge_opt']); L.push('/','');
   L.push('&dfi_control'); L.push(' dfi_opt = '+niEl('niDfiOpt').value+','); L.push('/','');
   L.push('&namelist_quilt'); L.push(' nio_tasks_per_group = '+niNum('niNioTasks',0)+','); L.push(' nio_groups = '+niNum('niNioGroups',1)+','); L.push('/');
   return L.join('\n');
