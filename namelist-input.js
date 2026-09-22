@@ -71,11 +71,11 @@ function generateNamelistInput(){
  ' mp_physics = '+v(d.map(x=>x.mp))+',\n cu_physics = '+v(d.map(x=>x.cu))+',\n ra_lw_physics = '+v(d.map(x=>x.lw))+',\n ra_sw_physics = '+v(d.map(x=>x.sw))+',\n'+
  ' bl_pbl_physics = '+v(d.map(x=>x.pbl))+',\n sf_sfclay_physics = '+v(d.map(x=>x.sfclay))+',\n sf_surface_physics = '+v(d.map(x=>x.lsm))+',\n sf_urban_physics = '+v(d.map(x=>x.urban))+',\n'+
  ' radt = '+v(domains.map(()=>niNum('niRadt',5)))+',\n bldt = '+v(domains.map(()=>niNum('niBldt',0)))+',\n cudt = '+v(domains.map(()=>niNum('niCudt',5)))+',\n'+
- ' num_soil_layers = '+niNum('niSoilLayers',4)+',\n num_land_cat = '+niNum('niLandCat',21)+',\n sst_update = '+niBool('niSstUpdate')+',\n/\n\n'+
+ ' num_soil_layers = '+niNum('niSoilLayers',4)+',\n num_land_cat = '+niNum('niLandCat',21)+',\n icloud = '+niEl('niIcloud').value+',\n fractional_seaice = '+niEl('niFractionalSeaice').value+',\n sst_update = '+niBool('niSstUpdate')+',\n/\n\n'+
  '&dynamics\n hybrid_opt = '+niEl('niHybridOpt').value+',\n non_hydrostatic = '+niBool('niNonHydro')+',\n'+
  ' w_damping = '+niEl('niWDamping').value+',\n diff_opt = '+niEl('niDiffOpt').value+',\n km_opt = '+niEl('niKmOpt').value+',\n damp_opt = '+niEl('niDampOpt').value+',\n'+
  ' zdamp = '+niNum('niZdamp',5000)+',\n dampcoef = '+niNum('niDampcoef',0.2)+',\n moist_adv_opt = '+niNum('niMoistAdv',1)+',\n scalar_adv_opt = '+niNum('niScalarAdv',1)+',\n'+
- ' gwd_opt = '+niEl('niGwdOpt').value+',\n use_theta_m = '+niEl('niThetaM').value+',\n/\n\n'+
+ ' gwd_opt = '+niEl('niGwdOpt').value+',\n use_theta_m = '+niEl('niThetaM').value+',\n khdif = '+niNum('niKhdif',0)+',\n kvdif = '+niNum('niKvdif',0)+',\n/\n\n'+
  '&bdy_control\n spec_bdy_width = '+niNum('niSpecBdyWidth',5)+',\n spec_zone = '+niNum('niSpecZone',1)+',\n relax_zone = '+niNum('niRelaxZone',4)+',\n specified = '+specified+',\n nested = '+nested+',\n/\n\n'+
  '&fdda\n grid_fdda = '+v(domains.map(()=>niEl('niGridFdda').value))+',\n obs_nudge_opt = '+v(domains.map(()=>niEl('niObsNudge').value))+',\n/\n\n'+
  '&namelist_quilt\n nio_tasks_per_group = '+niNum('niNioTasks',0)+',\n nio_groups = '+niNum('niNioGroups',1)+',\n/\n';
