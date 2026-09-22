@@ -354,13 +354,13 @@ function generateNamelistInput(){
   L.push(' sst_update = '+niBool('niSstUpdate')+','); L.push('/','');
 
   L.push('&dynamics');
-  L.push(' hybrid_opt = '+niEl('niHybridOpt').value+','); L.push(' non_hydrostatic = '+v(domains.map((_,i)=>perDomainValue('non_hydrostatic',i,".true."))),');
-  L.push(' w_damping = '+niEl('niWDamping').value+','); L.push(' diff_opt = '+v(domains.map((_,i)=>perDomainValue('diff_opt',i,-1))),');
-  L.push(' km_opt = '+v(domains.map((_,i)=>perDomainValue('km_opt',i,-1))),'); L.push(' damp_opt = '+niEl('niDampOpt').value+',');
-  L.push(' zdamp = '+v(domains.map((_,i)=>perDomainValue('zdamp',i,5000))),'); L.push(' dampcoef = '+v(domains.map((_,i)=>perDomainValue('dampcoef',i,0.2))),');
-  L.push(' moist_adv_opt = '+v(domains.map((_,i)=>perDomainValue('moist_adv_opt',i,1))),'); L.push(' scalar_adv_opt = '+v(domains.map((_,i)=>perDomainValue('scalar_adv_opt',i,1))),');
-  L.push(' gwd_opt = '+v(domains.map((_,i)=>perDomainValue('gwd_opt',i,0))),'); L.push(' use_theta_m = '+niEl('niThetaM').value+',');
-  L.push(' khdif = '+v(domains.map((_,i)=>perDomainValue('khdif',i,0))),'); L.push(' kvdif = '+v(domains.map((_,i)=>perDomainValue('kvdif',i,0))),'); L.push('/','');
+  L.push(' hybrid_opt = '+niEl('niHybridOpt').value+','); L.push(' non_hydrostatic = '+v(domains.map((_,i)=>perDomainValue('non_hydrostatic',i,'.true.')))+',');
+  L.push(' w_damping = '+niEl('niWDamping').value+','); L.push(' diff_opt = '+v(domains.map((_,i)=>perDomainValue('diff_opt',i,-1)))+',');
+  L.push(' km_opt = '+v(domains.map((_,i)=>perDomainValue('km_opt',i,-1)))+','); L.push(' damp_opt = '+niEl('niDampOpt').value+',');
+  L.push(' zdamp = '+v(domains.map((_,i)=>perDomainValue('zdamp',i,5000)))+','); L.push(' dampcoef = '+v(domains.map((_,i)=>perDomainValue('dampcoef',i,0.2)))+',');
+  L.push(' moist_adv_opt = '+v(domains.map((_,i)=>perDomainValue('moist_adv_opt',i,1)))+','); L.push(' scalar_adv_opt = '+v(domains.map((_,i)=>perDomainValue('scalar_adv_opt',i,1)))+',');
+  L.push(' gwd_opt = '+v(domains.map((_,i)=>perDomainValue('gwd_opt',i,0)))+','); L.push(' use_theta_m = '+niEl('niThetaM').value+',');
+  L.push(' khdif = '+v(domains.map((_,i)=>perDomainValue('khdif',i,0)))+','); L.push(' kvdif = '+v(domains.map((_,i)=>perDomainValue('kvdif',i,0)))+','); L.push('/','');
 
   L.push('&bdy_control');
   L.push(' spec_bdy_width = '+niNum('niSpecBdyWidth',5)+','); L.push(' spec_zone = '+niNum('niSpecZone',1)+',');
