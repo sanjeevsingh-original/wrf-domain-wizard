@@ -72,7 +72,7 @@ function updatePhysicsCompatibility(){
   const notes = [];
   if(cu.includes(1) && Number(niEl('niKfetaTrigger')?.value)!==1) notes.push('kfeta_trigger applies only to cu_physics=1 (Kain-Fritsch).');
   if(Number(niEl('niIshallow')?.value)===1 && !cu.some(x=>x===3||x===5)) notes.push('ishallow=1 is documented for cu_physics=3 or 5.');
-  if(sh.includes(5) && pbl.some(x=>![2,4,5,6].includes(x))) notes.push('shcu_physics=5 (Deng) requires a compatible MYJ/MYNN-family PBL; verify the exact WRF version.');
+  if(sh.includes(5) && pbl.some(x=>![2,5,6].includes(x))) notes.push('shcu_physics=5 (Deng) requires a compatible MYJ/MYNN-family PBL; verify the exact WRF version.');
   if(sh.includes(4) && !cu.includes(14)) notes.push('shcu_physics=4 is intended for the KSAS / cu_physics=14 combination.');
   if(Number(niEl('niCugdAvedx')?.value)===3 && !cu.includes(5)) notes.push('cugd_avedx=3 is documented for cu_physics=5.');
   if(Number(niEl('niCuDiag')?.value)===1 && !cu.some(x=>[3,5,93].includes(x))) notes.push('cu_diag=1 is documented for cu_physics=3, 5, or 93.');
@@ -122,6 +122,7 @@ function generateNamelistInput(){
   const suite=niEl('physicsSuiteInput').value;
   const physicsSuite=suite==='none'?'':" physics_suite = '"+suite+"',";
   const ad={
+    bmjrad:niEl('niBmjRadFeedback').value,
     kfeta:niEl('niKfetaTrigger').value, ishallow:niEl('niIshallow').value,
     cugd:niEl('niCugdAvedx').value, nsas:niEl('niNsasDxFactor').value,
     convtrans:niNum('niConvtransAvglen',30), cudiag:niEl('niCuDiag').value,
@@ -178,6 +179,7 @@ function generateNamelistInput(){
   L.push(' convtrans_avglen_m = '+ad.convtrans+',');
   L.push(' cu_diag = '+v(domains.map(()=>ad.cudiag))+',');
   L.push(' cu_rad_feedback = '+v(domains.map(()=>ad.curad))+',');
+  L.push(' bmj_rad_feedback = '+ad.bmjrad+',');
   L.push(' kf_edrates = '+v(domains.map(()=>ad.kfeds))+',');
   L.push(' shallowcu_forced_ra = '+v(domains.map(()=>ad.forcedra))+',');
   L.push(' maxiens = '+ad.maxiens+','); L.push(' maxens = '+ad.maxens+',');
@@ -219,7 +221,7 @@ function downloadNamelistInput(){
 
 niEl('domainCount').addEventListener('change',buildNamelistInputTable);
 niEl('exportInputBtn').addEventListener('click',downloadNamelistInput);
-['niKfetaTrigger','niIshallow','niCugdAvedx','niNsasDxFactor','niConvtransAvglen','niCuDiag','niCuRadFeedback','niKfEdrates','niShallowForcedRa','niMaxiens','niMaxens','niMaxens2','niMaxens3','niEnsdim'].forEach(id=>{
+['niBmjRadFeedback','niKfetaTrigger','niIshallow','niCugdAvedx','niNsasDxFactor','niConvtransAvglen','niCuDiag','niCuRadFeedback','niKfEdrates','niShallowForcedRa','niMaxiens','niMaxens','niMaxens2','niMaxens3','niEnsdim'].forEach(id=>{
   niEl(id)?.addEventListener('change',updatePhysicsCompatibility);
 });
 buildNamelistInputTable();
