@@ -154,7 +154,10 @@ function generateNamelistInput(){
   ' mp_physics = '+v(d.map(x=>x.mp))+',\n cu_physics = '+v(d.map(x=>x.cu))+',\n ra_lw_physics = '+v(d.map(x=>x.lw))+',\n ra_sw_physics = '+v(d.map(x=>x.sw))+',\n'+
   ' bl_pbl_physics = '+v(d.map(x=>x.pbl))+',\n sf_sfclay_physics = '+v(d.map(x=>x.sfclay))+',\n sf_surface_physics = '+v(d.map(x=>x.lsm))+',\n sf_urban_physics = '+v(d.map(x=>x.urban))+',\n'+
   ' radt = '+v(domains.map(()=>niNum('niRadt',5)))+',\n bldt = '+v(domains.map(()=>niNum('niBldt',0)))+',\n cudt = '+v(domains.map(()=>niNum('niCudt',5)))+',\n'+
-  ' num_soil_layers = '+niNum('niSoilLayers',4)+',\n num_land_cat = '+niNum('niLandCat',21)+',\n icloud = '+niEl('niIcloud').value+',\n fractional_seaice = '+niEl('niFractionalSeaice').value+',\n sst_update = '+niBool('niSstUpdate')+',\n/\n\n'+
+    ' shcu_physics = '+v(d.map(x=>x.shcu))+',\\n cu_diag = '+v(domains.map(()=>ad.cudiag))+',\\n cu_rad_feedback = '+v(domains.map(()=>ad.curad))+',\\n kf_edrates = '+v(domains.map(()=>ad.kfeds))+',\\n'+
+  ' kfeta_trigger = '+ad.kfeta+',\\n ishallow = '+ad.ishallow+',\\n cugd_avedx = '+ad.cugd+',\\n nsas_dx_factor = '+ad.nsas+',\\n convtrans_avglen_m = '+ad.convtrans+',\\n shallowcu_forced_ra = '+ad.forcedra+',\\n'+
+  ' maxiens = '+ad.maxiens+',\\n maxens = '+ad.maxens+',\\n maxens2 = '+ad.maxens2+',\\n maxens3 = '+ad.maxens3+',\\n ensdim = '+ad.ensdim+',\\n'+
+' num_soil_layers = '+niNum('niSoilLayers',4)+',\n num_land_cat = '+niNum('niLandCat',21)+',\n icloud = '+niEl('niIcloud').value+',\n fractional_seaice = '+niEl('niFractionalSeaice').value+',\n sst_update = '+niBool('niSstUpdate')+',\n/\n\n'+
   '&dynamics\n hybrid_opt = '+niEl('niHybridOpt').value+',\n non_hydrostatic = '+niBool('niNonHydro')+',\n'+
   ' w_damping = '+niEl('niWDamping').value+',\n diff_opt = '+niEl('niDiffOpt').value+',\n km_opt = '+niEl('niKmOpt').value+',\n damp_opt = '+niEl('niDampOpt').value+',\n'+
   ' zdamp = '+niNum('niZdamp',5000)+',\n dampcoef = '+niNum('niDampcoef',0.2)+',\n moist_adv_opt = '+niNum('niMoistAdv',1)+',\n scalar_adv_opt = '+niNum('niScalarAdv',1)+',\n'+
