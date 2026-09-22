@@ -78,7 +78,7 @@ function generateNamelistInput(){
  ' gwd_opt = '+niEl('niGwdOpt').value+',\n use_theta_m = '+niEl('niThetaM').value+',\n khdif = '+niNum('niKhdif',0)+',\n kvdif = '+niNum('niKvdif',0)+',\n/\n\n'+
  '&bdy_control\n spec_bdy_width = '+niNum('niSpecBdyWidth',5)+',\n spec_zone = '+niNum('niSpecZone',1)+',\n relax_zone = '+niNum('niRelaxZone',4)+',\n specified = '+specified+',\n nested = '+nested+',\n/\n\n'+
  '&fdda\n grid_fdda = '+v(domains.map(()=>niEl('niGridFdda').value))+',\n obs_nudge_opt = '+v(domains.map(()=>niEl('niObsNudge').value))+',\n/\n\n'+
- '&namelist_quilt\n nio_tasks_per_group = '+niNum('niNioTasks',0)+',\n nio_groups = '+niNum('niNioGroups',1)+',\n/\n';
+ '&dfi_control\n dfi_opt = '+niEl('niDfiOpt').value+',\n/\n\n'+\n '&grib2\n/\n\n'+\n (niEl('niNoahMp').value==='1'?'&noah_mp\n/\n\n':'')+\n '&namelist_quilt\n nio_tasks_per_group = '+niNum('niNioTasks',0)+',\n nio_groups = '+niNum('niNioGroups',1)+',\n/\n';
 }
 function downloadNamelistInput(){try{const x=generateNamelistInput(),b=new Blob([x],{type:'text/plain;charset=utf-8'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='namelist.input';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);}catch(e){showError(e.message);}}
 niEl('domainCount').addEventListener('change',buildNamelistInputTable);
