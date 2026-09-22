@@ -176,4 +176,5 @@ function downloadNamelistInput(){
 
 niEl('domainCount').addEventListener('change',buildNamelistInputTable);
 niEl('exportInputBtn').addEventListener('click',downloadNamelistInput);
+['niKfetaTrigger','niIshallow','niCugdAvedx','niNsasDxFactor','niConvtransAvglen','niCuDiag','niCuRadFeedback','niKfEdrates','niShallowForcedRa','niMaxiens','niMaxens','niMaxens2','niMaxens3','niEnsdim'].forEach(id=>niEl(id)?.addEventListener('change',updatePhysicsCompatibility));
 buildNamelistInputTable();
