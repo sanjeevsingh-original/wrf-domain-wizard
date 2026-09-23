@@ -53,7 +53,9 @@
     if(!(dt>0)) add(errors,'error','time_step must be greater than zero.','niTimeStep');
     if(document.getElementById('projectionInput')?.value!=='lat-lon' && Number.isFinite(dx) && dt>6*(dx/1000)) add(warnings,'warning','time_step='+dt+'s exceeds the WRF 6×DX guideline ('+(6*dx/1000).toFixed(2)+'s for d01).','niTimeStep');
     if(!Number.isInteger(evert)||evert<10) add(errors,'error','e_vert must be an integer of at least 10.','niEvert');
+    if(Number.isInteger(evert)&&evert<35) add(warnings,'warning','e_vert is below the WRF best-practice recommendation of 35 levels.','niEvert');
     if(!(ptop>0)) add(errors,'error','p_top_requested must be greater than zero.','niPtop');
+    if(Number.isFinite(ptop)&&ptop<5000) add(warnings,'warning','p_top_requested is below the WRF recommended 5000 Pa default; verify that your incoming WPS data support this top pressure.','niPtop');
     if(!(interval>0)||!Number.isInteger(interval)) add(errors,'error','interval_seconds must be a positive integer.','intervalInput');
     if(!(met>0)) add(errors,'error','num_metgrid_levels must be positive.','niMetgridLevels');
     if(!(soil>0)) add(errors,'error','num_metgrid_soil_levels must be positive.','niMetgridSoilLevels');
@@ -93,12 +95,14 @@
       const h=per('history_interval',i), fpo=per('frames_per_outfile',i);
       if(!(h>=0)) add(errors,'error','d'+String(i+1).padStart(2,'0')+': history_interval must be zero or positive.');
       if(!(fpo>=1)) add(errors,'error','d'+String(i+1).padStart(2,'0')+': frames_per_outfile must be at least 1.');
+      if(h>0 && dt>0 && h*60%dt!==0) add(warnings,'warning','d'+String(i+1).padStart(2,'0')+': history_interval does not evenly divide by time_step; output times may require time-step adjustment.');
     }
 
     const specWidth=num('niSpecBdyWidth'), specZone=num('niSpecZone'), relaxZone=num('niRelaxZone'), specExp=num('niSpecExp');
     if(specWidth<1) add(errors,'error','spec_bdy_width must be at least 1.','niSpecBdyWidth');
     if(specZone<1) add(errors,'error','spec_zone must be at least 1.','niSpecZone');
     if(relaxZone<0) add(errors,'error','relax_zone cannot be negative.','niRelaxZone');
+    if(specWidth>10) add(errors,'error','spec_bdy_width cannot exceed 10.','niSpecBdyWidth');
     if(Number.isFinite(specWidth)&&Number.isFinite(specZone)&&Number.isFinite(relaxZone)&&specWidth!==specZone+relaxZone)
       add(errors,'error','spec_bdy_width must equal spec_zone + relax_zone for the current boundary configuration.','niSpecBdyWidth');
     if(!(specExp>=0)) add(errors,'error','spec_exp must be zero or positive.','niSpecExp');
@@ -144,6 +148,10 @@
       add(infos,'info','feedback=1 has no nested domain to receive feedback; this is harmless but has no nesting effect.');
     if(num('niFeedback')===1 && n>1)
       add(infos,'info','Two-way feedback is enabled for the selected multi-domain configuration.');
+    if(num('niFeedback')===0 && num('niSmoothOption')!==0)
+      add(warnings,'warning','smooth_option is non-zero while feedback=0; smoothing is intended for parent-grid feedback configurations.');
+    if(num('niFeedback')===1 && ratios.slice(1).some(r=>Number.isInteger(r)&&r%2===0))
+      add(warnings,'warning','Two-way feedback is enabled with an even parent_grid_ratio; WRF best practices recommend odd ratios for feedback configurations.');
     if(Math.abs(dx-dy)>1e-9 && ['lambert','mercator','polar'].includes(el('projectionInput')?.value))
       add(warnings,'warning','dx and dy differ for a projected grid. Verify that unequal spacing is intentional.');
 
