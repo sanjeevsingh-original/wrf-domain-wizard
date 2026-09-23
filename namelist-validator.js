@@ -47,11 +47,16 @@
     }
 
     const dx=num('dxInput'), dy=num('dyInput'), dt=num('niTimeStep'), evert=num('niEvert'), ptop=num('niPtop');
+    const interval=num('intervalInput'), met=num('niMetgridLevels'), soil=num('niMetgridSoilLevels');
     if(!(dx>0)) add(errors,'error','d01 dx must be greater than zero.','dxInput');
     if(!(dy>0)) add(errors,'error','d01 dy must be greater than zero.','dyInput');
     if(!(dt>0)) add(errors,'error','time_step must be greater than zero.','niTimeStep');
+    if(Number.isFinite(dx) && dt>6*(dx/1000)) add(warnings,'warning','time_step='+dt+'s exceeds the WRF 6×DX guideline ('+(6*dx/1000).toFixed(2)+'s for d01).','niTimeStep');
     if(!Number.isInteger(evert)||evert<10) add(errors,'error','e_vert must be an integer of at least 10.','niEvert');
     if(!(ptop>0)) add(errors,'error','p_top_requested must be greater than zero.','niPtop');
+    if(!(interval>0)||!Number.isInteger(interval)) add(errors,'error','interval_seconds must be a positive integer.','intervalInput');
+    if(!(met>0)) add(errors,'error','num_metgrid_levels must be positive.','niMetgridLevels');
+    if(!(soil>0)) add(errors,'error','num_metgrid_soil_levels must be positive.','niMetgridSoilLevels');
 
     // Validate the WPS-derived domain geometry as well as the namelist.input controls.
     if(wpsReady && typeof domains!=='undefined' && domains.length===n){
@@ -82,9 +87,13 @@
     if(!(hist>=0)) add(errors,'error','history_interval must be zero or positive.');
     if(!(num('niFramesPerOutfile')>=1)) add(errors,'error','frames_per_outfile must be at least 1.','niFramesPerOutfile');
 
-    if(num('niSpecBdyWidth')<1) add(errors,'error','spec_bdy_width must be at least 1.','niSpecBdyWidth');
-    if(num('niSpecZone')<1) add(errors,'error','spec_zone must be at least 1.','niSpecZone');
-    if(num('niRelaxZone')<0) add(errors,'error','relax_zone cannot be negative.','niRelaxZone');
+    const specWidth=num('niSpecBdyWidth'), specZone=num('niSpecZone'), relaxZone=num('niRelaxZone'), specExp=num('niSpecExp');
+    if(specWidth<1) add(errors,'error','spec_bdy_width must be at least 1.','niSpecBdyWidth');
+    if(specZone<1) add(errors,'error','spec_zone must be at least 1.','niSpecZone');
+    if(relaxZone<0) add(errors,'error','relax_zone cannot be negative.','niRelaxZone');
+    if(Number.isFinite(specWidth)&&Number.isFinite(specZone)&&Number.isFinite(relaxZone)&&specWidth!==specZone+relaxZone)
+      add(errors,'error','spec_bdy_width must equal spec_zone + relax_zone for the current boundary configuration.','niSpecBdyWidth');
+    if(!(specExp>=0)) add(errors,'error','spec_exp must be zero or positive.','niSpecExp');
 
     if(num('niGridFdda')>0){
       for(let i=0;i<n;i++){
@@ -96,12 +105,22 @@
       add(warnings,'warning','obs_nudge_opt is off for every domain while the global obs_nudge_opt control is enabled.');
 
     const p=Array.from({length:n},(_,i)=>physics(i));
+    ['history_interval','frames_per_outfile','radt','bldt','cudt','non_hydrostatic','diff_opt','km_opt','zdamp','dampcoef','khdif','kvdif','moist_adv_opt','scalar_adv_opt','gwd_opt','grid_fdda','obs_nudge_opt'].forEach(key=>{
+      const e=el('nid_'+key+'_0');
+      if(!e)return;
+      const v0=per(key,0);
+      for(let i=1;i<n;i++){
+        const vi=per(key,i);
+        if(String(vi)!==String(v0)) add(warnings,'warning','Per-domain '+key+' differs across domains; the global/default control initializes all domains but does not override explicit per-domain edits.');
+      }
+    });
     p.forEach((x,i)=>{
       const d='d'+String(i+1).padStart(2,'0');
       if(!Number.isInteger(x.mp)||x.mp<0) add(errors,'error',`${d}: invalid mp_physics value.`);
       if(!Number.isInteger(x.cu)||x.cu<0) add(errors,'error',`${d}: invalid cu_physics value.`);
       if(!Number.isInteger(x.pbl)||x.pbl<0) add(errors,'error',`${d}: invalid bl_pbl_physics value.`);
-      if(x.lsm===4 && num('niNoahMp')===0) add(warnings,'warning',`${d}: sf_surface_physics=4 selects Noah-MP, but the Noah-MP advanced block is disabled.`);
+      if(x.lsm===4 && num('niNoahMp')===1) add(warnings,'warning',d+': sf_surface_physics=4 uses Noah-MP and the optional default &noah_mp block will be written; verify the defaults against your installed WRF version.');
+      if(x.lsm!==4 && num('niNoahMp')===1) add(warnings,'warning',d+': the optional &noah_mp block is enabled, but this domain is not using sf_surface_physics=4.');
       if(x.urban>0 && x.lsm===0) add(warnings,'warning',`${d}: urban physics is enabled with sf_surface_physics=0; verify the intended land-surface configuration.`);
       if(x.shcu===4 && x.cu!==14) add(warnings,'warning',`${d}: shcu_physics=4 is intended for a compatible KSAS/cumulus configuration; verify cu_physics.`);
       if(x.shcu===5 && ![2,5,6].includes(x.pbl)) add(warnings,'warning',`${d}: shcu_physics=5 may require a MYJ/MYNN-family PBL; verify your WRF version.`);
