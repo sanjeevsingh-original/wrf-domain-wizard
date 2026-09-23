@@ -51,7 +51,7 @@
     if(!(dx>0)) add(errors,'error','d01 dx must be greater than zero.','dxInput');
     if(!(dy>0)) add(errors,'error','d01 dy must be greater than zero.','dyInput');
     if(!(dt>0)) add(errors,'error','time_step must be greater than zero.','niTimeStep');
-    if(Number.isFinite(dx) && dt>6*(dx/1000)) add(warnings,'warning','time_step='+dt+'s exceeds the WRF 6×DX guideline ('+(6*dx/1000).toFixed(2)+'s for d01).','niTimeStep');
+    if(document.getElementById('projectionInput')?.value!=='lat-lon' && Number.isFinite(dx) && dt>6*(dx/1000)) add(warnings,'warning','time_step='+dt+'s exceeds the WRF 6×DX guideline ('+(6*dx/1000).toFixed(2)+'s for d01).','niTimeStep');
     if(!Number.isInteger(evert)||evert<10) add(errors,'error','e_vert must be an integer of at least 10.','niEvert');
     if(!(ptop>0)) add(errors,'error','p_top_requested must be greater than zero.','niPtop');
     if(!(interval>0)||!Number.isInteger(interval)) add(errors,'error','interval_seconds must be a positive integer.','intervalInput');
