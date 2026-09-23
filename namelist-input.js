@@ -335,12 +335,12 @@ function generateNamelistInput(){
   L.push(' end_day = '+v(domains.map(()=>te.end.d))+','); L.push(' end_hour = '+v(domains.map(()=>te.end.h))+',');
   L.push(' end_minute = '+v(domains.map(()=>te.end.mi))+','); L.push(' end_second = '+v(domains.map(()=>te.end.s))+',');
   L.push(' interval_seconds = '+w.intervalSeconds+','); L.push(' input_from_file = '+v(domains.map((_,i)=>perDomainValue('input_from_file',i,'.true.')))+',');
-  L.push(' history_interval = '+v(domains.map((_,i)=>perDomainValue('history_interval',i,niNum('niHistoryInterval',60)))+',');
-  L.push(' frames_per_outfile = '+v(domains.map((_,i)=>perDomainValue('frames_per_outfile',i,niNum('niFramesPerOutfile',1)))+',');
+  L.push(' history_interval = '+v(domains.map((_,i)=>perDomainValue('history_interval',i,niNum('niHistoryInterval',60))))+',');
+  L.push(' frames_per_outfile = '+v(domains.map((_,i)=>perDomainValue('frames_per_outfile',i,niNum('niFramesPerOutfile',1))))+',');
   L.push(' restart = '+niBool('niRestart')+','); L.push(' restart_interval = '+niNum('niRestartInterval',7200)+',');
   L.push(' io_form_history = '+niEl('niIoHistory').value+','); L.push(' io_form_restart = '+niEl('niIoRestart').value+',');
   L.push(' io_form_input = 2,'); L.push(' io_form_boundary = 2,'); L.push(' debug_level = '+niNum('niDebugLevel',0)+',');
-  L.push('/','');
+  emitPerDomainFields(L,'Time control',['history_interval','frames_per_outfile','input_from_file']); L.push('/','');
 
   L.push('&domains');
   L.push(' time_step = '+niNum('niTimeStep',Math.max(1,Math.round(sp.dx/1000*6)))+',');
