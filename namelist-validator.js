@@ -58,8 +58,8 @@
       try{
         const w=window.wpsSettings(), s=window.settings(), sp=window.spacing(), rs0=window.ratios();
         const gv=WRF.validate(domains,sp.dx,sp.dy,rs0,s);
-        gv.errors.forEach(x=>add(errors,'error,' + JSON.stringify(x)));
-        gv.warnings.forEach(x=>add(warnings,'warning,' + JSON.stringify(x)));
+        gv.errors.forEach(x=>add(errors,'error',String(x)));
+        gv.warnings.forEach(x=>add(warnings,'warning',String(x)));
       }catch(e){
         add(errors,'error','WPS/domain validation failed: '+(e?.message || e));
       }
