@@ -69,18 +69,18 @@
 <details class="border rounded p-2 mb-2"><summary class="fw-semibold small">4. Dynamics</summary>
 <div class="row g-2 pt-2">
 <div class="col-6"><label class="form-label small">hybrid_opt</label><select id="niHybridOpt" class="form-select form-select-sm"><option value="2" selected>2</option><option value="1">1</option><option value="0">0</option></select></div>
-<div class="col-6"><label class="form-label small">non_hydrostatic</label><select id="niNonHydro" class="form-select form-select-sm"><option value=".true." selected>true</option><option value=".false.">false</option></select></div>
+<div class="col-6"><label class="form-label small">non_hydrostatic default</label><select id="niNonHydro" class="form-select form-select-sm"><option value=".true." selected>true</option><option value=".false.">false</option></select></div>
 <div class="col-6"><label class="form-label small">w_damping</label><select id="niWDamping" class="form-select form-select-sm"><option value="0">0</option><option value="1">1</option><option value="2">2</option></select></div>
-<div class="col-6"><label class="form-label small">diff_opt</label><select id="niDiffOpt" class="form-select form-select-sm"><option value="2" selected>2</option><option value="1">1</option><option value="0">0</option></select></div>
-<div class="col-6"><label class="form-label small">km_opt</label><select id="niKmOpt" class="form-select form-select-sm"><option value="4" selected>4</option><option value="2">2</option><option value="1">1</option><option value="0">0</option></select></div>
+<div class="col-6"><label class="form-label small">diff_opt default</label><select id="niDiffOpt" class="form-select form-select-sm"><option value="2" selected>2</option><option value="1">1</option><option value="0">0</option></select></div>
+<div class="col-6"><label class="form-label small">km_opt default</label><select id="niKmOpt" class="form-select form-select-sm"><option value="4" selected>4</option><option value="2">2</option><option value="1">1</option><option value="0">0</option></select></div>
 <div class="col-6"><label class="form-label small">damp_opt</label><select id="niDampOpt" class="form-select form-select-sm"><option value="3">3 — Rayleigh</option><option value="0">0 — off</option><option value="1">1</option><option value="2">2</option></select></div>
-<div class="col-6"><label class="form-label small">zdamp (m)</label><input id="niZdamp" class="form-control form-control-sm" type="number" min="0" value="5000"></div>
-<div class="col-6"><label class="form-label small">dampcoef</label><input id="niDampcoef" class="form-control form-control-sm" type="number" min="0" step="0.01" value="0.2"></div>
-<div class="col-6"><label class="form-label small">khdif</label><input id="niKhdif" class="form-control form-control-sm" type="number" min="0" value="0"></div>
-<div class="col-6"><label class="form-label small">kvdif</label><input id="niKvdif" class="form-control form-control-sm" type="number" min="0" value="0"></div>
-<div class="col-6"><label class="form-label small">moist_adv_opt</label><input id="niMoistAdv" class="form-control form-control-sm" type="number" min="1" value="1"></div>
-<div class="col-6"><label class="form-label small">scalar_adv_opt</label><input id="niScalarAdv" class="form-control form-control-sm" type="number" min="1" value="1"></div>
-<div class="col-6"><label class="form-label small">gwd_opt</label><select id="niGwdOpt" class="form-select form-select-sm"><option value="1">1 — on</option><option value="0">0 — off</option></select></div>
+<div class="col-6"><label class="form-label small">zdamp default (m)</label><input id="niZdamp" class="form-control form-control-sm" type="number" min="0" value="5000"></div>
+<div class="col-6"><label class="form-label small">dampcoef default</label><input id="niDampcoef" class="form-control form-control-sm" type="number" min="0" step="0.01" value="0.2"></div>
+<div class="col-6"><label class="form-label small">khdif default</label><input id="niKhdif" class="form-control form-control-sm" type="number" min="0" value="0"></div>
+<div class="col-6"><label class="form-label small">kvdif default</label><input id="niKvdif" class="form-control form-control-sm" type="number" min="0" value="0"></div>
+<div class="col-6"><label class="form-label small">moist_adv_opt default</label><input id="niMoistAdv" class="form-control form-control-sm" type="number" min="1" value="1"></div>
+<div class="col-6"><label class="form-label small">scalar_adv_opt default</label><input id="niScalarAdv" class="form-control form-control-sm" type="number" min="1" value="1"></div>
+<div class="col-6"><label class="form-label small">gwd_opt default</label><select id="niGwdOpt" class="form-select form-select-sm"><option value="1">1 — on</option><option value="0">0 — off</option></select></div>
 <div class="col-6"><label class="form-label small">use_theta_m</label><select id="niThetaM" class="form-select form-select-sm"><option value="1" selected>1 — on</option><option value="0">0 — off</option></select></div>
 </div></details>
 
@@ -95,8 +95,8 @@
 
 <details class="border rounded p-2 mb-2"><summary class="fw-semibold small">6. FDDA / nudging (optional)</summary>
 <div class="row g-2 pt-2">
-<div class="col-6"><label class="form-label small">grid_fdda</label><select id="niGridFdda" class="form-select form-select-sm"><option value="0">0 — off</option><option value="1">1 — grid nudging</option><option value="2">2 — spectral nudging</option></select></div>
-<div class="col-6"><label class="form-label small">obs_nudge_opt</label><select id="niObsNudge" class="form-select form-select-sm"><option value="0">0 — off</option><option value="1">1 — on</option></select></div>
+<div class="col-6"><label class="form-label small">grid_fdda default</label><select id="niGridFdda" class="form-select form-select-sm"><option value="0">0 — off</option><option value="1">1 — grid nudging</option><option value="2">2 — spectral nudging</option></select></div>
+<div class="col-6"><label class="form-label small">obs_nudge_opt default</label><select id="niObsNudge" class="form-select form-select-sm"><option value="0">0 — off</option><option value="1">1 — on</option></select></div>
 </div><div class="form-text mt-2">Leave off unless you have configured the corresponding forcing/observation files and FDDA settings.</div>
 </details>
 
