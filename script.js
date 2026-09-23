@@ -16,7 +16,20 @@ function geogResolutions(){return Array.from({length:Number(countEl.value)},(_,i
 function ratios(){const r=Array(Number(countEl.value)).fill(1);document.querySelectorAll('.ratio-input').forEach(x=>r[Number(x.dataset.child)]=Number(x.value));return r;}
 function settings(){if(!domains.length)throw new Error('Draw d01 first.');const projection=document.getElementById('projectionInput').value,b=domains[0].getBounds(),auto=document.getElementById('autoCenterInput').checked,refLat=auto?b.getCenter().lat:Number(document.getElementById('refLatInput').value),refLon=auto?b.getCenter().lng:Number(document.getElementById('refLonInput').value);if(!Number.isFinite(refLat)||refLat<=-90||refLat>=90||!Number.isFinite(refLon)||refLon<-180||refLon>180)throw new Error('Reference latitude/longitude must be valid.');const s={projection,refLat,refLon};if(projection==='lambert'){s.truelat1=Number(document.getElementById('trueLat1Input').value);s.truelat2=Number(document.getElementById('trueLat2Input').value);}if(projection==='polar'){s.polarLat=Number(document.getElementById('polarLatInput').value);s.hemisphere=document.getElementById('polarHemisphere').value;}return s;}
 function spacing(){const p=document.getElementById('projectionInput').value,dx=Number(document.getElementById('dxInput').value),dy=Number(document.getElementById('dyInput').value);if(!(dx>0&&dy>0))throw new Error('d01 dx/dy must be positive.');if(p!=='lat-lon'&&(dx<100||dy<100))throw new Error('Projected-grid dx/dy must be at least 100 m.');return{dx,dy};}
-function wpsSettings(){const start=document.getElementById('startDateInput').value.trim(),end=document.getElementById('endDateInput').value.trim(),interval=Number(document.getElementById('intervalInput').value),path=document.getElementById('geogPathInput').value.trim(),re=/^\d{4}-\d{2}-\d{2}_\d{2}:\d{2}:\d{2}$/;if(!re.test(start)||!re.test(end))throw new Error('Dates must use YYYY-MM-DD_HH:MM:SS format.');if(start>=end)throw new Error('end_date must be later than start_date.');if(!Number.isInteger(interval)||interval<=0)throw new Error('interval_seconds must be a positive integer.');if(!path)throw new Error('geog_data_path cannot be empty.');return{startDate:start,endDate:end,intervalSeconds:interval,geogPath:path};}
+function wpsSettings(){
+  const start=document.getElementById('startDateInput').value.trim(),end=document.getElementById('endDateInput').value.trim(),interval=Number(document.getElementById('intervalInput').value),path=document.getElementById('geogPathInput').value.trim(),re=/^\d{4}-\d{2}-\d{2}_\d{2}:\d{2}:\d{2}$/;
+  const validDate=x=>{
+    if(!re.test(x))return false;
+    const m=x.match(/^(\d{4})-(\d{2})-(\d{2})_(\d{2}):(\d{2}):(\d{2})$/).slice(1).map(Number);
+    const [y,mo,d,h,mi,s]=m,dt=new Date(Date.UTC(y,mo-1,d,h,mi,s));
+    return dt.getUTCFullYear()===y&&dt.getUTCMonth()===mo-1&&dt.getUTCDate()===d&&dt.getUTCHours()===h&&dt.getUTCMinutes()===mi&&dt.getUTCSeconds()===s;
+  };
+  if(!validDate(start)||!validDate(end))throw new Error('Dates must be valid YYYY-MM-DD_HH:MM:SS calendar dates.');
+  if(start>=end)throw new Error('end_date must be later than start_date.');
+  if(!Number.isInteger(interval)||interval<=0)throw new Error('interval_seconds must be a positive integer.');
+  if(!path)throw new Error('geog_data_path cannot be empty.');
+  return{startDate:start,endDate:end,intervalSeconds:interval,geogPath:path};
+}
 function addDomain(layer,index){layer.options.domainIndex=index;layer.setStyle({color:colors[index],weight:3,fillOpacity:.08});layer.bindTooltip(`d${pad(index)}`,{sticky:true});drawnItems.addLayer(layer);domains.push(layer);}
 function cancelDrawing(){drawingActive=false;drawingPointerId=null;startLatLng=null;if(preview){map.removeLayer(preview);preview=null;}map.getContainer().style.cursor='';map.dragging.enable();}
 function clearResizeHandles(){resizeHandles.forEach(h=>drawnItems.removeLayer(h));resizeHandles=[];resizing=false;resizeDomainIndex=null;resizeCorner=null;}
