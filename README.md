@@ -6,7 +6,7 @@ Interactive WRF/WPS domain-design and `namelist.wps` planning tool for atmospher
 
 - Draw **1–10 nested domains** directly on an interactive map.
 - Enforce sequential parent/child containment.
-- Set an **independent integer nesting ratio (2:1–10:1) for every child domain**.
+- Set an **independent integer grid nesting ratio (2:1–10:1) and parent time-step ratio (1:1–10:1) for every child domain**.
 - Automatically flag even ratios because odd ratios are generally preferred for two-way nesting.
 - Support Lambert Conformal, Mercator, Polar Stereographic and Lat-Lon projections.
 - Use projection-aware horizontal grid calculations through `proj4js` for projected grids.
@@ -21,6 +21,12 @@ Interactive WRF/WPS domain-design and `namelist.wps` planning tool for atmospher
 - Compare WPS grid dimensions, `DX`/`DY`, `XLAT_M`/`XLONG_M` ranges and domain corners against the current design.
 - Diagnose `MAPFAC_M` using minimum, maximum, mean, median, center and deviation-from-unity statistics.
 - Export a JSON validation report containing the browser-side WPS diagnostics.
+
+## WRF runtime namelist.input
+
+The **namelist.input** workflow requires the complete WPS/domain configuration above plus the WRF runtime settings in the namelist.input panel. The generated `namelist.input` derives `e_we`, `e_sn`, `grid_id`, `parent_id`, `i_parent_start`, `j_parent_start`, `parent_grid_ratio` and `parent_time_step_ratio` from the selected domain geometry and nesting controls.
+
+Global/default controls initialize the corresponding per-domain controls; explicit per-domain edits are retained. Use **Validate WPS + namelist.input** before downloading. The built-in validator checks common geometry, nesting, time-step, boundary, physics, FDDA and option-consistency issues, but it does not replace `real.exe`/`wrf.exe` validation against the exact installed WRF version.
 
 ## WPS output verification
 
@@ -42,7 +48,7 @@ The visualization is a **diagnostic comparison**, not a replacement for running 
 
 1. Select the number of domains (1–10).
 2. Choose **Draw manually** or **Auto-nest from d01**.
-3. Set each parent→child nesting ratio. Use 3:1 or 5:1 unless your experiment has a reason to use another integer ratio.
+3. Set each parent→child grid ratio and time-step ratio. Use 3:1 or 5:1 grid ratios for typical real-data two-way nesting unless your experiment has a reason to use another integer ratio.
 4. Select the WRF/WPS map projection and set `dx`/`dy` for d01.
 5. Set projection parameters and reference coordinates.
 6. Draw d01, then d02, d03, etc. Each child must be fully contained within its parent.
