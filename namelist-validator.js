@@ -84,8 +84,13 @@
       add(errors,'error','restart=true requires restart_interval > 0.','niRestartInterval');
 
     const hist=num('niHistoryInterval');
-    if(!(hist>=0)) add(errors,'error','history_interval must be zero or positive.');
+    if(!(hist>=0)) add(errors,'error','history_interval must be zero or positive.','niHistoryInterval');
     if(!(num('niFramesPerOutfile')>=1)) add(errors,'error','frames_per_outfile must be at least 1.','niFramesPerOutfile');
+    for(let i=0;i<n;i++){
+      const h=per('history_interval',i), fpo=per('frames_per_outfile',i);
+      if(!(h>=0)) add(errors,'error','d'+String(i+1).padStart(2,'0')+': history_interval must be zero or positive.');
+      if(!(fpo>=1)) add(errors,'error','d'+String(i+1).padStart(2,'0')+': frames_per_outfile must be at least 1.');
+    }
 
     const specWidth=num('niSpecBdyWidth'), specZone=num('niSpecZone'), relaxZone=num('niRelaxZone'), specExp=num('niSpecExp');
     if(specWidth<1) add(errors,'error','spec_bdy_width must be at least 1.','niSpecBdyWidth');
