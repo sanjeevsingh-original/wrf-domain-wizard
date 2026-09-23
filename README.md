@@ -96,7 +96,7 @@ For a paper, thesis or project, record at minimum:
 - WRF/WPS version and commit/release where relevant
 - domain projection and all projection parameters
 - d01 `dx`/`dy`
-- every parent→child `parent_grid_ratio`
+- every parent→child `parent_grid_ratio` and `parent_time_step_ratio`
 - `e_we`, `e_sn`, `i_parent_start`, `j_parent_start`
 - geographic-data package/version and path configuration
 - simulation dates and forcing interval
