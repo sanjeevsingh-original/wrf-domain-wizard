@@ -12,5 +12,13 @@
   }
   window.updateGridCountPanel=render;window.addEventListener('wrf-domains-changed',render);
   ['domainCount','dxInput','dyInput','projectionInput','refLatInput','refLonInput','trueLat1Input','trueLat2Input','polarLatInput','polarHemisphere','autoCenterInput'].forEach(id=>{document.getElementById(id)?.addEventListener('input',render);document.getElementById(id)?.addEventListener('change',render);});
+  function bindRatioInputs(){
+    document.querySelectorAll('.ratio-input').forEach(x=>{
+      x.addEventListener('input',render);
+      x.addEventListener('change',render);
+    });
+  }
+  bindRatioInputs();
+  window.addEventListener('wrf-domains-changed',()=>{bindRatioInputs();render();});
   render();
 })();
