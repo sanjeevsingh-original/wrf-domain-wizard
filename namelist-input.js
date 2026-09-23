@@ -154,12 +154,34 @@ function perDomainValue(key,i,def){
   const el=niEl('nid_'+key+'_'+i);
   return el ? (el.type==='checkbox' ? (el.checked?'.true.':'.false.') : el.value) : String(def);
 }
+const globalPerDomainDefaults={
+  history_interval:'niHistoryInterval', frames_per_outfile:'niFramesPerOutfile',
+  radt:'niRadt', bldt:'niBldt', cudt:'niCudt',
+  non_hydrostatic:'niNonHydro', diff_opt:'niDiffOpt', km_opt:'niKmOpt',
+  zdamp:'niZdamp', dampcoef:'niDampcoef', khdif:'niKhdif', kvdif:'niKvdif',
+  moist_adv_opt:'niMoistAdv', scalar_adv_opt:'niScalarAdv', gwd_opt:'niGwdOpt',
+  grid_fdda:'niGridFdda', obs_nudge_opt:'niObsNudge'
+};
+function fieldDefault(f){
+  const id=globalPerDomainDefaults[f.key], e=id&&niEl(id);
+  return e?.value ?? f.def;
+}
 function niInputForField(f,i){
-  const id='nid_'+f.key+'_'+i;
+  const id='nid_'+f.key+'_'+i, def=fieldDefault(f);
   if(f.type==='bool'){
-    return '<select id="'+id+'" class="form-select form-select-sm"><option value=".false."'+(f.def==='.false.'?' selected':'')+'>false</option><option value=".true."'+(f.def==='.true.'?' selected':'')+'>true</option></select>';
+    return '<select id="'+id+'" class="form-select form-select-sm"><option value=".false."'+(def==='.false.'?' selected':'')+'>false</option><option value=".true."'+(def==='.true.'?' selected':'')+'>true</option></select>';
   }
-  return '<input id="'+id+'" class="form-control form-control-sm" type="number" step="any" value="'+f.def+'">';
+  return '<input id="'+id+'" class="form-control form-control-sm" type="number" step="any" value="'+def+'">';
+}
+function applyGlobalPerDomain(key,id){
+  const e=niEl(id); if(!e)return;
+  const n=Number(niEl('domainCount')?.value||0);
+  for(let i=0;i<n;i++){const x=niEl('nid_'+key+'_'+i);if(x)x.value=e.value;}
+}
+function bindGlobalPerDomainControls(){
+  Object.entries(globalPerDomainDefaults).forEach(([key,id])=>{
+    niEl(id)?.addEventListener('change',()=>applyGlobalPerDomain(key,id));
+  });
 }
 function buildPerDomainNamelistPanel(){
   const n=Number(niEl('domainCount').value), root=niEl('perDomainNamelistTable');
@@ -313,11 +335,12 @@ function generateNamelistInput(){
   L.push(' end_day = '+v(domains.map(()=>te.end.d))+','); L.push(' end_hour = '+v(domains.map(()=>te.end.h))+',');
   L.push(' end_minute = '+v(domains.map(()=>te.end.mi))+','); L.push(' end_second = '+v(domains.map(()=>te.end.s))+',');
   L.push(' interval_seconds = '+w.intervalSeconds+','); L.push(' input_from_file = '+v(domains.map((_,i)=>perDomainValue('input_from_file',i,'.true.')))+',');
-  L.push(' history_interval = '+v(domains.map((_,i)=>perDomainValue('history_interval',i,60)))+',');
-  L.push(' frames_per_outfile = '+v(domains.map((_,i)=>perDomainValue('frames_per_outfile',i,1)))+',');
+  L.push(' history_interval = '+v(domains.map((_,i)=>perDomainValue('history_interval',i,niNum('niHistoryInterval',60)))+',');
+  L.push(' frames_per_outfile = '+v(domains.map((_,i)=>perDomainValue('frames_per_outfile',i,niNum('niFramesPerOutfile',1)))+',');
   L.push(' restart = '+niBool('niRestart')+','); L.push(' restart_interval = '+niNum('niRestartInterval',7200)+',');
   L.push(' io_form_history = '+niEl('niIoHistory').value+','); L.push(' io_form_restart = '+niEl('niIoRestart').value+',');
-  L.push(' io_form_input = 2,'); L.push(' io_form_boundary = 2,'); emitPerDomainFields(L,'Time control',['history_interval','frames_per_outfile','input_from_file']); L.push('/','');
+  L.push(' io_form_input = 2,'); L.push(' io_form_boundary = 2,'); L.push(' debug_level = '+niNum('niDebugLevel',0)+',');
+  L.push('/','');
 
   L.push('&domains');
   L.push(' time_step = '+niNum('niTimeStep',Math.max(1,Math.round(sp.dx/1000*6)))+',');
@@ -342,9 +365,9 @@ function generateNamelistInput(){
   L.push(' sf_surface_physics = '+v(d.map(x=>x.lsm))+',');
   L.push(' sf_urban_physics = '+v(d.map(x=>x.urban))+',');
   L.push(' shcu_physics = '+v(d.map(x=>x.shcu))+',');
-  L.push(' radt = '+v(domains.map((_,i)=>perDomainValue('radt',i,5)))+',');
-  L.push(' bldt = '+v(domains.map((_,i)=>perDomainValue('bldt',i,0)))+',');
-  L.push(' cudt = '+v(domains.map((_,i)=>perDomainValue('cudt',i,0)))+',');
+  L.push(' radt = '+v(domains.map((_,i)=>perDomainValue('radt',i,niNum('niRadt',5))))+',');
+  L.push(' bldt = '+v(domains.map((_,i)=>perDomainValue('bldt',i,niNum('niBldt',0))))+',');
+  L.push(' cudt = '+v(domains.map((_,i)=>perDomainValue('cudt',i,niNum('niCudt',0))))+',');
   L.push(' kfeta_trigger = '+ad.kfeta+','); L.push(' ishallow = '+ad.ishallow+',');
   L.push(' cugd_avedx = '+ad.cugd+','); L.push(' nsas_dx_factor = '+ad.nsas+',');
   L.push(' convtrans_avglen_m = '+ad.convtrans+',');
@@ -370,12 +393,24 @@ function generateNamelistInput(){
 
   L.push('&bdy_control');
   L.push(' spec_bdy_width = '+niNum('niSpecBdyWidth',5)+','); L.push(' spec_zone = '+niNum('niSpecZone',1)+',');
-  L.push(' relax_zone = '+niNum('niRelaxZone',4)+','); L.push(' specified = '+specified+','); L.push(' nested = '+nested+','); emitPerDomainFields(L,'Boundary',['specified','nested']); L.push('/','');
+  L.push(' relax_zone = '+niNum('niRelaxZone',4)+','); L.push(' spec_exp = '+niNum('niSpecExp',0)+',');
+  L.push(' specified = '+specified+','); L.push(' nested = '+nested+','); emitPerDomainFields(L,'Boundary',['specified','nested']); L.push('/','');
 
   L.push('&fdda');
   L.push(' grid_fdda = '+v(domains.map(()=>niEl('niGridFdda').value))+',');
   L.push(' obs_nudge_opt = '+v(domains.map((_,i)=>perDomainValue('obs_nudge_opt',i,0)))+','); emitPerDomainFields(L,'FDDA',['grid_fdda','obs_nudge_opt']); L.push('/','');
   L.push('&dfi_control'); L.push(' dfi_opt = '+niEl('niDfiOpt').value+','); L.push('/','');
+  if(niEl('niNoahMp')?.value==='1'){
+    L.push('&noah_mp');
+    L.push(' dveg = 4,');
+    L.push(' opt_crs = 1,'); L.push(' opt_sfc = 1,'); L.push(' opt_btr = 1,'); L.push(' opt_run = 3,');
+    L.push(' opt_infdv = 0,'); L.push(' opt_frz = 1,'); L.push(' opt_inf = 1,'); L.push(' opt_rad = 3,');
+    L.push(' opt_alb = 2,'); L.push(' opt_snf = 1,'); L.push(' opt_tbot = 2,'); L.push(' opt_stc = 1,');
+    L.push(' opt_gla = 1,'); L.push(' opt_rsf = 1,'); L.push(' opt_soil = 1,'); L.push(' opt_pedo = 1,');
+    L.push(' opt_crop = 0,'); L.push(' opt_irr = 0,'); L.push(' opt_irrm = 0,'); L.push(' opt_tdrn = 0,');
+    L.push(' soiltstep = 0.0,'); L.push(' noahmp_output = 1,'); L.push(' noahmp_acc_dt = 0.0,');
+    L.push('/');
+  }
   L.push('&namelist_quilt'); L.push(' nio_tasks_per_group = '+niNum('niNioTasks',0)+','); L.push(' nio_groups = '+niNum('niNioGroups',1)+','); L.push('/');
   return L.join('\n');
 }
@@ -394,7 +429,8 @@ function downloadNamelistInput(){
   }catch(e){ showError(e.message); }
 }
 
-niEl('domainCount').addEventListener('change',()=>{buildNamelistInputTable();buildPerDomainNamelistPanel();});
+niEl('domainCount').addEventListener('change',()=>{buildNamelistInputTable();buildPerDomainNamelistPanel();bindGlobalPerDomainControls();});
+bindGlobalPerDomainControls();
 niEl('exportInputBtn').addEventListener('click',downloadNamelistInput);
 ['niBmjRadFeedback','niKfetaTrigger','niIshallow','niCugdAvedx','niNsasDxFactor','niConvtransAvglen','niCuDiag','niCuRadFeedback','niKfEdrates','niShallowForcedRa','niMaxiens','niMaxens','niMaxens2','niMaxens3','niEnsdim'].forEach(id=>{
   niEl(id)?.addEventListener('change',updatePhysicsCompatibility);
