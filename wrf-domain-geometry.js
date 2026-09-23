@@ -38,7 +38,7 @@ function validate(domains,dx,dy,ratios,s){
       if(!domains[i-1].getBounds().contains(domains[i].getBounds()))errors.push(`d${String(i+1).padStart(2,'0')} is not fully contained inside d${String(i).padStart(2,'0')}.`);
     }
     const g=gridDimensions(domains[i].getBounds(),cdx,cdy,s),ew=i?snapDimension(g.e_we,r):g.e_we,es=i?snapDimension(g.e_sn,r):g.e_sn;
-    if(ew<100||es<100)warnings.push(`d${String(i+1).padStart(2,'0')} is smaller than 100 × 100 grid points (${ew} × ${es}). This is a planning warning, not a universal WRF validity rule.`);
+    if(ew<100||es<100)errors.push(`d${String(i+1).padStart(2,'0')} is smaller than the WRF recommended minimum of 100 × 100 grid points (${ew} × ${es}).`);
     if(i&&Number.isInteger(r)&&r>=2&&r<=10){
       if((ew-1)%r||(es-1)%r)errors.push(`d${String(i+1).padStart(2,'0')} dimensions are incompatible with its ${r}:1 nesting ratio.`);
       const pGrid=gridDimensions(domains[i-1].getBounds(),cdx*r,cdy*r,s);
