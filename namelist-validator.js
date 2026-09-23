@@ -71,8 +71,11 @@
     }
 
     const ratios=typeof window.ratios==='function'?window.ratios():[];
+    const timeRatios=typeof window.timeRatios==='function'?window.timeRatios():ratios;
     for(let i=1;i<n;i++){
       const r=Number(ratios[i]);
+      const tr=Number(timeRatios[i]);
+      if(!Number.isInteger(tr)||tr<1||tr>10) add(errors,'error','d'+String(i+1).padStart(2,'0')+' parent_time_step_ratio must be an integer from 1 to 10.');
       if(!Number.isInteger(r)||r<2||r>10) add(errors,'error',`d${String(i+1).padStart(2,'0')} nesting ratio must be an integer from 2 to 10.`);
       else {
         if(r%2===0) add(warnings,'warning',`d${String(i+1).padStart(2,'0')} uses an even ${r}:1 ratio; verify this is intended for your feedback configuration.`);
