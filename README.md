@@ -47,7 +47,7 @@ The visualization is a **diagnostic comparison**, not a replacement for running 
 ## Recommended workflow
 
 1. Select the number of domains (1–10).
-2. Choose **Draw manually** or **Auto-nest from d01**.
+2. Use **manual drawing only**: draw d01, then d02, d03, etc. sequentially.
 3. Set each parent→child grid ratio and time-step ratio. Use 3:1 or 5:1 grid ratios for typical real-data two-way nesting unless your experiment has a reason to use another integer ratio.
 4. Select the WRF/WPS map projection and set `dx`/`dy` for d01.
 5. Set projection parameters and reference coordinates.
