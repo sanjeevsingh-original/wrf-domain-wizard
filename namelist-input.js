@@ -272,7 +272,7 @@ function parseStartEnd(w){
 
 function generateNamelistInput(){
   const n=Number(niEl('domainCount').value);
-  if(domains.length!==n) throw new Error('Complete all selected domains before downloading namelist.input.');
+  if(domains.length!==n) throw new Error('Complete all selected WPS domains before downloading namelist.input.');
   const w=wpsSettings(), rs=ratios(), sp=spacing(), ss=settings(), d=namelistInputValues;
   const dur=durationParts(w.startDate,w.endDate), te=parseStartEnd(w);
   let cdx=sp.dx, cdy=sp.dy, g=[];
@@ -326,7 +326,7 @@ function generateNamelistInput(){
   L.push(' e_vert = '+v(domains.map(()=>niNum('niEvert',45)))+','); L.push(' p_top_requested = '+niNum('niPtop',5000)+',');
   L.push(' num_metgrid_levels = '+niNum('niMetgridLevels',34)+','); L.push(' num_metgrid_soil_levels = '+niNum('niMetgridSoilLevels',4)+',');
   L.push(' dx = '+sp.dx+','); L.push(' dy = '+sp.dy+',');
-  L.push(' grid_id = '+v(domains.map((_,i)=>i+1))+','); L.push(' parent_id = '+v(domains.map((_,i)=>i))+',');
+  L.push(' grid_id = '+v(domains.map((_,i)=>i+1))+','); L.push(' parent_id = '+v(domains.map((_,i)=>i===0?1:i))+',');
   L.push(' i_parent_start = '+v(is)+','); L.push(' j_parent_start = '+v(js)+',');
   L.push(' parent_grid_ratio = '+v(rs)+','); L.push(' parent_time_step_ratio = '+v(rs)+',');
   L.push(' feedback = '+niEl('niFeedback').value+','); L.push(' smooth_option = '+niEl('niSmoothOption').value+','); L.push('/','');
