@@ -22,6 +22,20 @@ Interactive WRF/WPS domain-design and `namelist.wps` planning tool for atmospher
 - Diagnose `MAPFAC_M` using minimum, maximum, mean, median, center and deviation-from-unity statistics.
 - Export a JSON validation report containing the browser-side WPS diagnostics.
 
+
+## Validation and testing
+
+The repository is continuously checked at the code and integration level. The current test pass includes:
+
+- JavaScript syntax validation for the geometry, drawing, grid-count, WPS validation/visualization and `namelist.input` modules.
+- HTML duplicate-ID and static element-reference checks.
+- Projection/geometry tests covering valid domains, nested containment, invalid nesting ratios, minimum grid-size checks and parent-boundary buffer diagnostics.
+- `namelist.input` generation tests covering domain geometry, parent IDs/start indices, independent `parent_grid_ratio` and `parent_time_step_ratio`, `history_interval`, `debug_level`, `spec_exp` and optional Noah-MP output.
+- WPS output-validation tests covering domain-number mapping, duplicate/missing files, filename validation and `geogrid.log` status messages.
+- Integration checking to ensure the WPS validator and visualization layer use a single active `runWPSOutputValidation()` workflow.
+
+These are automated code-level/browser-side tests. They do **not** execute `geogrid.exe`, `ungrib.exe`, `metgrid.exe`, `real.exe` or `wrf.exe`. Production verification still requires an installed WRF/WPS environment and the actual generated NetCDF output.
+
 ## WRF runtime namelist.input
 
 The **namelist.input** workflow requires the complete WPS/domain configuration above plus the WRF runtime settings in the namelist.input panel. The generated `namelist.input` derives `e_we`, `e_sn`, `grid_id`, `parent_id`, `i_parent_start`, `j_parent_start`, `parent_grid_ratio` and `parent_time_step_ratio` from the selected domain geometry and nesting controls.
