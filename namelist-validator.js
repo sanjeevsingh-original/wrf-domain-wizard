@@ -30,8 +30,21 @@
 
     if(!Number.isInteger(n)||n<1||n>10) add(errors,'error','Number of domains must be an integer from 1 to 10.','domainCount');
 
-    if(typeof domains!=='undefined' && domains.length!==n)
-      add(errors,'error','Draw all selected domains before validating/exporting namelist.input.','domainCount');
+    // namelist.input is intentionally dependent on the complete WPS/domain setup.
+    // The WPS fields are used to derive the &domains geometry in the generated namelist.input.
+    if(typeof domains==='undefined' || domains.length!==n)
+      add(errors,'error',`Complete and draw all ${n} selected WPS domains before validating/exporting namelist.input.`,'domainCount');
+
+    let wpsReady=false;
+    try{
+      const w=typeof window.wpsSettings==='function'?window.wpsSettings():null;
+      const s=typeof window.settings==='function'?window.settings():null;
+      const sp=typeof window.spacing==='function'?window.spacing():null;
+      if(!w || !s || !sp) add(errors,'error','The WPS configuration functions are not available. Reload the page and verify the WPS section is loaded.');
+      else wpsReady=true;
+    }catch(e){
+      add(errors,'error','WPS configuration is incomplete: '+(e?.message || e));
+    }
 
     const dx=num('dxInput'), dy=num('dyInput'), dt=num('niTimeStep'), evert=num('niEvert'), ptop=num('niPtop');
     if(!(dx>0)) add(errors,'error','d01 dx must be greater than zero.','dxInput');
@@ -39,6 +52,18 @@
     if(!(dt>0)) add(errors,'error','time_step must be greater than zero.','niTimeStep');
     if(!Number.isInteger(evert)||evert<10) add(errors,'error','e_vert must be an integer of at least 10.','niEvert');
     if(!(ptop>0)) add(errors,'error','p_top_requested must be greater than zero.','niPtop');
+
+    // Validate the WPS-derived domain geometry as well as the namelist.input controls.
+    if(wpsReady && typeof domains!=='undefined' && domains.length===n){
+      try{
+        const w=window.wpsSettings(), s=window.settings(), sp=window.spacing(), rs0=window.ratios();
+        const gv=WRF.validate(domains,sp.dx,sp.dy,rs0,s);
+        gv.errors.forEach(x=>add(errors,'error,' + JSON.stringify(x)));
+        gv.warnings.forEach(x=>add(warnings,'warning,' + JSON.stringify(x)));
+      }catch(e){
+        add(errors,'error','WPS/domain validation failed: '+(e?.message || e));
+      }
+    }
 
     const ratios=typeof window.ratios==='function'?window.ratios():[];
     for(let i=1;i<n;i++){
