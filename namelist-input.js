@@ -273,7 +273,7 @@ function updatePhysicsCompatibility(){
 function emitPerDomainFields(L,section,skip){
   const skipSet=new Set(skip||[]);
   perDomainFields.filter(f=>f.section===section&&!skipSet.has(f.key)).forEach(f=>{
-    L.push(' '+f.key+' = '+v(domains.map((_,i)=>perDomainValue(f.key,i,f.def)))+',');
+    L.push(' '+f.key+' = '+domains.map((_,i)=>perDomainValue(f.key,i,f.def)).join(', ')+',');
   });
 }
 function durationParts(start,end){
