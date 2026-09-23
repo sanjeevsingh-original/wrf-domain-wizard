@@ -8,5 +8,49 @@ function gridDimensions(bounds,dx,dy,s){if(s.projection==='lat-lon')return{e_we:
 function snapDimension(value,ratio){return Math.max(3,Math.round((value-1)/ratio)*ratio+1);}
 function parentStart(parent,child,parentGrid,childGrid,ratio,s){const p=projectedExtent(parent,s),c=projectedExtent(child,s),i=1+Math.round(((c.minX-p.minX)/Math.max(1,p.maxX-p.minX))*(parentGrid.e_we-1)),j=1+Math.round(((c.minY-p.minY)/Math.max(1,p.maxY-p.minY))*(parentGrid.e_sn-1));return{i:clamp(i,1,Math.max(1,parentGrid.e_we-(childGrid.e_we-1)/ratio)),j:clamp(j,1,Math.max(1,parentGrid.e_sn-(childGrid.e_sn-1)/ratio))};}
 function shrinkBounds(bounds,factor){const c=bounds.getCenter(),lat=(bounds.getNorth()-bounds.getSouth())*factor/2,lon=(bounds.getEast()-bounds.getWest())*factor/2;return L.latLngBounds([c.lat-lat,c.lng-lon],[c.lat+lat,c.lng+lon]);}
-function validate(domains,dx,dy,ratios,s){const errors=[],warnings=[];if(!domains.length)errors.push('At least one domain is required.');if(!Number.isFinite(dx)||dx<=0)errors.push('d01 dx must be positive.');if(!Number.isFinite(dy)||dy<=0)errors.push('d01 dy must be positive.');if(s.projection!=='lat-lon'&&Math.abs(dx-dy)>1e-9)warnings.push('WRF best-practice guidance recommends equal dx and dy for Lambert, Mercator and Polar projections.');if(s.projection==='lambert'&&Math.abs(s.truelat1-s.truelat2)<1e-9)warnings.push('Lambert truelat1 and truelat2 are identical; verify this is intentional.');let cdx=dx,cdy=dy;for(let i=0;i<domains.length;i++){let r=1;if(i){r=Number(ratios[i]);if(!Number.isInteger(r)||r<2||r>10)errors.push(`d${String(i+1).padStart(2,'0')} has an invalid 2–10 integer nesting ratio.`);else{cdx/=r;cdy/=r;if(r%2===0)warnings.push(`d${String(i+1).padStart(2,'0')} uses an even ${r}:1 ratio. Even ratios are not recommended for two-way feedback.`);if(r>7)warnings.push(`d${String(i+1).padStart(2,'0')} uses ${r}:1. WRF real-data guidance generally recommends 3:1 or 5:1 and cautions against ratios above 7:1.`);}if(!domains[i-1].getBounds().contains(domains[i].getBounds()))errors.push(`d${String(i+1).padStart(2,'0')} is not fully contained inside d${String(i).padStart(2,'0')}.`);}const g=gridDimensions(domains[i].getBounds(),cdx,cdy,s),ew=i?snapDimension(g.e_we,r):g.e_we,es=i?snapDimension(g.e_sn,r):g.e_sn;if(ew<100||es<100)errors.push(`d${String(i+1).padStart(2,'0')} is smaller than the recommended minimum of 100 × 100 grid points (${ew} × ${es}).`);if(i&&((ew-1)%r||(es-1)%r))errors.push(`d${String(i+1).padStart(2,'0')} dimensions are incompatible with its ${r}:1 nesting ratio.`);}return{errors,warnings};}
+function validate(domains,dx,dy,ratios,s){
+  const errors=[],warnings=[];
+  if(!domains.length)errors.push('At least one domain is required.');
+  if(!Number.isFinite(dx)||dx<=0)errors.push('d01 dx must be positive.');
+  if(!Number.isFinite(dy)||dy<=0)errors.push('d01 dy must be positive.');
+  if(s.projection!=='lat-lon'&&Math.abs(dx-dy)>1e-9)warnings.push('WRF best-practice guidance recommends equal dx and dy for Lambert, Mercator and Polar projections.');
+  if(s.projection==='lambert'){
+    if(!Number.isFinite(s.truelat1)||!Number.isFinite(s.truelat2))errors.push('Lambert truelat1 and truelat2 must be finite numbers.');
+    if(Math.abs(s.truelat1-s.truelat2)<1e-9)warnings.push('Lambert truelat1 and truelat2 are identical; verify this is intentional.');
+    if(Math.abs(s.truelat1)>90||Math.abs(s.truelat2)>90)errors.push('Lambert true latitudes must be within -90 to 90 degrees.');
+  }
+  if(s.projection==='polar'){
+    if(!Number.isFinite(s.polarLat)||s.polarLat<=0||s.polarLat>=90)errors.push('Polar true latitude must be greater than 0 and less than 90 degrees.');
+  }
+  if(!Number.isFinite(s.refLat)||s.refLat<-90||s.refLat>90)errors.push('ref_lat must be between -90 and 90 degrees.');
+  if(!Number.isFinite(s.refLon)||s.refLon<-180||s.refLon>180)errors.push('ref_lon must be between -180 and 180 degrees.');
+  let cdx=dx,cdy=dy;
+  for(let i=0;i<domains.length;i++){
+    let r=1;
+    if(i){
+      r=Number(ratios[i]);
+      if(!Number.isInteger(r)||r<2||r>10)errors.push(`d${String(i+1).padStart(2,'0')} has an invalid 2–10 integer nesting ratio.`);
+      else{
+        cdx/=r;cdy/=r;
+        if(r%2===0)warnings.push(`d${String(i+1).padStart(2,'0')} uses an even ${r}:1 ratio. Even ratios are not recommended for two-way feedback.`);
+        if(r>7)warnings.push(`d${String(i+1).padStart(2,'0')} uses ${r}:1. WRF real-data guidance generally recommends 3:1 or 5:1 and cautions against ratios above 7:1.`);
+      }
+      if(!domains[i-1].getBounds().contains(domains[i].getBounds()))errors.push(`d${String(i+1).padStart(2,'0')} is not fully contained inside d${String(i).padStart(2,'0')}.`);
+    }
+    const g=gridDimensions(domains[i].getBounds(),cdx,cdy,s),ew=i?snapDimension(g.e_we,r):g.e_we,es=i?snapDimension(g.e_sn,r):g.e_sn;
+    if(ew<100||es<100)warnings.push(`d${String(i+1).padStart(2,'0')} is smaller than 100 × 100 grid points (${ew} × ${es}). This is a planning warning, not a universal WRF validity rule.`);
+    if(i){
+      if((ew-1)%r||(es-1)%r)errors.push(`d${String(i+1).padStart(2,'0')} dimensions are incompatible with its ${r}:1 nesting ratio.`);
+      const pGrid=gridDimensions(domains[i-1].getBounds(),cdx*r,cdy*r,s);
+      const parent={e_we:snapDimension(pGrid.e_we,i-1?snapDimension(pGrid.e_we,Number(ratios[i-1])):pGrid.e_we),e_sn:snapDimension(pGrid.e_sn,i-1?snapDimension(pGrid.e_sn,Number(ratios[i-1])):pGrid.e_sn)};
+      const child={e_we:ew,e_sn:es};
+      const ps=parentStart(domains[i-1].getBounds(),domains[i].getBounds(),parent,child,r,s);
+      const right=ps.i+(ew-1)/r, top=ps.j+(es-1)/r;
+      const leftMargin=ps.i-1,bottomMargin=ps.j-1,rightMargin=parent.e_we-right,topMargin=parent.e_sn-top;
+      const minMargin=Math.min(leftMargin,bottomMargin,rightMargin,topMargin);
+      if(minMargin<5)warnings.push(`d${String(i+1).padStart(2,'0')} is within ${Math.max(0,Math.floor(minMargin))} parent-grid point(s) of a parent boundary. WPS/WRF nesting should retain a buffer around the nest.`);
+    }
+  }
+  return{errors,warnings};
+}
 return{projectionDef,projectedExtent,gridDimensions,snapDimension,parentStart,shrinkBounds,validate};})();
