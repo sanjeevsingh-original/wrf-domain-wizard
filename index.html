@@ -4,10 +4,10 @@
 
 <details open class="border rounded p-2 mb-2"><summary class="fw-semibold small">1. Time control</summary>
 <div class="row g-2 pt-2">
-<div class="col-6"><label class="form-label small">history_interval (min)</label><input id="niHistoryInterval" class="form-control form-control-sm" type="number" min="0" value="60"></div>
-<div class="col-6"><label class="form-label small">frames_per_outfile</label><input id="niFramesPerOutfile" class="form-control form-control-sm" type="number" min="1" value="1"></div>
+<div class="col-6"><label class="form-label small">history_interval default (min)</label><input id="niHistoryInterval" class="form-control form-control-sm" type="number" min="0" value="60"></div>
+<div class="col-6"><label class="form-label small">frames_per_outfile default</label><input id="niFramesPerOutfile" class="form-control form-control-sm" type="number" min="1" value="1"></div>
 <div class="col-6"><label class="form-label small">restart</label><select id="niRestart" class="form-select form-select-sm"><option value=".false.">false</option><option value=".true.">true</option></select></div>
-<div class="col-6"><label class="form-label small">restart_interval (s)</label><input id="niRestartInterval" class="form-control form-control-sm" type="number" min="0" value="7200"></div>
+<div class="col-6"><label class="form-label small">restart_interval (min)</label><input id="niRestartInterval" class="form-control form-control-sm" type="number" min="0" value="7200"></div>
 <div class="col-6"><label class="form-label small">debug_level</label><input id="niDebugLevel" class="form-control form-control-sm" type="number" min="0" value="0"></div>
 </div></details>
 
@@ -31,7 +31,7 @@
 <div id="namelistInputTable"></div>
 <div id="perDomainNamelistPanel" class="border rounded p-2 mt-2">
 <div class="small fw-semibold mb-2">Per-domain namelist.input controls</div>
-<div class="small text-muted mb-2">These controls are generated for every selected domain. WRF distinguishes <code>max_dom</code> variables from single-entry variables; only parameters documented as domain-specific are shown here. Geometry-derived values remain locked to the drawn domains.</div>
+<div class="small text-muted mb-2">These controls are generated for every selected domain. WRF distinguishes <code>max_dom</code> variables from single-entry variables. The global/default controls above initialize these domain-specific values; changing a global/default control applies it to all domains.</div>
 <div id="perDomainNamelistTable"></div>
 </div>
 <div id="physicsAdvancedPanel" class="border rounded p-2 mt-2">
@@ -56,9 +56,9 @@
 <div class="small text-muted mt-2">These controls are written to <code>&physics</code>. Compatibility warnings are based on the selected cumulus/PBL schemes and current WRF documentation; final verification should use the WRF version installed on your system.</div>
 </div>
 <div class="row g-2 mt-1">
-<div class="col-4"><label class="form-label small">radt (min)</label><input id="niRadt" class="form-control form-control-sm" type="number" min="1" value="5"></div>
-<div class="col-4"><label class="form-label small">bldt (s)</label><input id="niBldt" class="form-control form-control-sm" type="number" min="0" value="0"></div>
-<div class="col-4"><label class="form-label small">cudt (min)</label><input id="niCudt" class="form-control form-control-sm" type="number" min="0" value="5"></div>
+<div class="col-4"><label class="form-label small">radt default (min)</label><input id="niRadt" class="form-control form-control-sm" type="number" min="1" value="5"></div>
+<div class="col-4"><label class="form-label small">bldt default (min)</label><input id="niBldt" class="form-control form-control-sm" type="number" min="0" value="0"></div>
+<div class="col-4"><label class="form-label small">cudt default (min)</label><input id="niCudt" class="form-control form-control-sm" type="number" min="0" value="0"></div>
 <div class="col-6"><label class="form-label small">num_soil_layers</label><input id="niSoilLayers" class="form-control form-control-sm" type="number" min="1" value="4"></div>
 <div class="col-6"><label class="form-label small">num_land_cat</label><input id="niLandCat" class="form-control form-control-sm" type="number" min="1" value="21"></div>
 <div class="col-6"><label class="form-label small">icloud</label><select id="niIcloud" class="form-select form-select-sm"><option value="1">1 — on</option><option value="0">0 — off</option></select></div>
@@ -90,7 +90,7 @@
 <div class="col-6"><label class="form-label small">spec_zone</label><input id="niSpecZone" class="form-control form-control-sm" type="number" min="1" value="1"></div>
 <div class="col-6"><label class="form-label small">relax_zone</label><input id="niRelaxZone" class="form-control form-control-sm" type="number" min="0" value="4"></div>
 <div class="col-6"><label class="form-label small">spec_exp</label><input id="niSpecExp" class="form-control form-control-sm" type="number" step="0.01" value="0"></div>
-</div><div class="form-text mt-2">For real-data runs, d01 uses specified boundaries. Nested domains use nested boundaries. spec_zone should remain 1.</div>
+</div><div class="form-text mt-2">For real-data runs, d01 uses specified boundaries. Nested domains use nested boundaries. <code>spec_bdy_width</code> should equal <code>spec_zone + relax_zone</code>; <code>spec_zone</code> should normally remain 1.</div>
 </details>
 
 <details class="border rounded p-2 mb-2"><summary class="fw-semibold small">6. FDDA / nudging (optional)</summary>
@@ -107,6 +107,6 @@
 <div class="col-6"><label class="form-label small">nio_groups</label><input id="niNioGroups" class="form-control form-control-sm" type="number" min="1" value="1"></div>
 <div class="col-6"><label class="form-label small">io_form_history</label><select id="niIoHistory" class="form-select form-select-sm"><option value="2">2 — netCDF</option><option value="11">11 — netCDF4</option></select></div>
 <div class="col-6"><label class="form-label small">io_form_restart</label><select id="niIoRestart" class="form-select form-select-sm"><option value="2">2 — netCDF</option><option value="11">11 — netCDF4</option></select></div>
-<div class="col-6"><label class="form-label small">Noah-MP options</label><select id="niNoahMp" class="form-select form-select-sm"><option value="0">Use default</option><option value="1">Enable basic noah_mp block</option></select></div>
+<div class="col-6"><label class="form-label small">Noah-MP options</label><select id="niNoahMp" class="form-select form-select-sm"><option value="0">Do not include &amp;noah_mp</option><option value="1">Include default &amp;noah_mp block</option></select></div>
 </div></details>
 </div><div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="autoCenterInput" checked><label class="form-check-label" for="autoCenterInput">Use d01 center as ref_lat/ref_lon</label></div><div class="alert alert-info py-2 small"><strong>Manual drawing:</strong> choose 1–10 domains and set each parent→child ratio. Use <strong>Start / Reset Drawing</strong>, then click and drag on the map to draw d01, d02, … sequentially. Children must be contained inside their parent.</div><div class="border-top pt-2 mt-2"><div class="small fw-semibold text-primary mb-2">namelist.input Actions</div><div class="d-grid gap-2"><button id="validateNamelistBtn" class="btn btn-warning">Validate WPS + namelist.input</button><button id="exportInputBtn" class="btn btn-primary">Download namelist.input</button><div id="namelistValidation" class="mt-2" aria-live="polite"></div></div><div id="output" class="mt-3" aria-live="polite"><p class="text-muted mb-0">Set your configuration and draw d01 to begin.</p></div><div class="border rounded p-2 mb-3"><div class="small fw-semibold mb-2">WPS output validation & visualization</div><label for="geoFilesInput" class="form-label small">Upload geo_em.d0*.nc files</label><input id="geoFilesInput" class="form-control form-control-sm" type="file" accept=".nc" multiple><label for="logFileInput" class="form-label small mt-2">Optional geogrid.log</label><input id="logFileInput" class="form-control form-control-sm" type="file" accept=".log,.txt"><div class="form-text">Files are parsed locally in your browser. Actual WPS footprints are drawn as dashed polygons over the planned domains.</div><button id="validateFilesBtn" class="btn btn-outline-primary btn-sm mt-2 w-100">Validate & Visualize WPS Output</button><div id="fileValidation" class="mt-2" aria-live="polite"></div></div></div></aside></div></main><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/proj4@2.9.2/dist/proj4.js"></script><script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script><script src="wrf-domain-geometry.js"></script><script src="namelist-template.js"></script><script src="wps-validator.js"></script><script src="wps-visualizer.js"></script><script src="script.js"></script><script src="namelist-input.js"></script><script src="namelist-validator.js"></script><script src="grid-count.js"></script></body></html>
